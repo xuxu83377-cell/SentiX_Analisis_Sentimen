@@ -1,6 +1,9 @@
 import os
 import re
 import pandas as pd
+import nltk
+nltk.download('stopwords')
+nltk.download('punkt')
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
