@@ -31,35 +31,54 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # ==============================
 kamus_normalisasi = {}
 
-with open(os.path.join(BASE_DIR, "Kamuscu.txt"), "r", encoding="utf-8") as f:
-    for baris in f:
-        kata = baris.strip().split()
-        if len(kata) == 2:
-            kamus_normalisasi[kata[0]] = kata[1]
+kamus_path = os.path.join(BASE_DIR, "Kamuscu.txt")
+if os.path.exists(kamus_path):
+    with open(kamus_path, "r", encoding="utf-8") as f:
+        for baris in f:
+            kata = baris.strip().split()
+            if len(kata) == 2:
+                kamus_normalisasi[kata[0]] = kata[1]
 
 # ==============================
-# LEXICON (FIX FINAL)
+# LEXICON (FIX AMAN)
 # ==============================
-pos_df = pd.read_csv(os.path.join(BASE_DIR, "positive.tsv"), sep="\t", engine="python")
-neg_df = pd.read_csv(os.path.join(BASE_DIR, "negative.tsv"), sep="\t", engine="python")
+def load_lexicon(file_path):
+    try:
+        df = pd.read_csv(file_path, sep="\t")
+
+        # kalau kolom aneh → fallback
+        if len(df.columns) < 2:
+            raise ValueError("Format salah")
+
+    except:
+        # fallback kalau file tanpa header
+        df = pd.read_csv(file_path, sep="\t", header=None)
+        df.columns = ['word', 'weight']
+
+    return df
+
+pos_path = os.path.join(BASE_DIR, "positive.tsv")
+neg_path = os.path.join(BASE_DIR, "negative.tsv")
+
+pos_df = load_lexicon(pos_path)
+neg_df = load_lexicon(neg_path)
 
 print("Kolom positif:", pos_df.columns)
 print("Kolom negatif:", neg_df.columns)
 
-# FLEXIBLE COLUMN (word / kata)
-if "word" in pos_df.columns:
-    kata_positif = set(pos_df["word"])
-elif "kata" in pos_df.columns:
-    kata_positif = set(pos_df["kata"])
-else:
-    kata_positif = set(pos_df.iloc[:, 0])
+# ==============================
+# FLEXIBLE COLUMN
+# ==============================
+def ambil_kata(df):
+    if "word" in df.columns:
+        return set(df["word"].astype(str))
+    elif "kata" in df.columns:
+        return set(df["kata"].astype(str))
+    else:
+        return set(df.iloc[:, 0].astype(str))
 
-if "word" in neg_df.columns:
-    kata_negatif = set(neg_df["word"])
-elif "kata" in neg_df.columns:
-    kata_negatif = set(neg_df["kata"])
-else:
-    kata_negatif = set(neg_df.iloc[:, 0])
+kata_positif = ambil_kata(pos_df)
+kata_negatif = ambil_kata(neg_df)
 
 # ==============================
 # PREPROCESSING
