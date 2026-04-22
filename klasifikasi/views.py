@@ -81,7 +81,6 @@ def home(request):
                     "-o", "hasil.csv"
                 ],
                 cwd=BASE_DIR
-            )
 
             # ==============================
             # CEK HASIL
