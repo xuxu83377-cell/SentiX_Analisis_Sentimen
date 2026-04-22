@@ -2,13 +2,17 @@ import os
 import re
 import pandas as pd
 import nltk
+
 nltk.download('stopwords')
 nltk.download('punkt')
+
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 
+# ==============================
 # STEMMER & STOPWORD
+# ==============================
 factory = StemmerFactory()
 stemmer = factory.create_stemmer()
 
@@ -23,7 +27,9 @@ stopword.update([
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# ==============================
 # KAMUS NORMALISASI
+# ==============================
 kamus_normalisasi = {}
 
 with open(os.path.join(BASE_DIR, "Kamuscu.txt"), "r", encoding="utf-8") as f:
@@ -32,33 +38,38 @@ with open(os.path.join(BASE_DIR, "Kamuscu.txt"), "r", encoding="utf-8") as f:
         if len(kata) == 2:
             kamus_normalisasi[kata[0]] = kata[1]
 
-# LEXICON INSET
-pos_df = pd.read_csv(os.path.join(BASE_DIR, "positive.tsv"), sep="\t")
-neg_df = pd.read_csv(os.path.join(BASE_DIR, "negative.tsv"), sep="\t")
+# ==============================
+# LEXICON (FIX ANTI ERROR)
+# ==============================
+pos_df = pd.read_csv(os.path.join(BASE_DIR, "positive.tsv"), sep="\t", engine="python")
+neg_df = pd.read_csv(os.path.join(BASE_DIR, "negative.tsv"), sep="\t", engine="python")
 
-kata_positif = set(pos_df["word"])
-kata_negatif = set(neg_df["word"])
+print("Kolom positive:", pos_df.columns)
+print("Kolom negative:", neg_df.columns)
 
+# Ambil kolom 'word' jika ada, kalau tidak ambil kolom pertama
+if "word" in pos_df.columns:
+    kata_positif = set(pos_df["word"])
+else:
+    kata_positif = set(pos_df.iloc[:, 0])
+
+if "word" in neg_df.columns:
+    kata_negatif = set(neg_df["word"])
+else:
+    kata_negatif = set(neg_df.iloc[:, 0])
+
+# ==============================
 # PREPROCESSING
+# ==============================
 def preprocessing(teks):
     teks = str(teks).lower()
 
-    # Hapus RT
     teks = re.sub(r'rt\s+', ' ', teks)
-
-    # Hapus mention
     teks = re.sub(r'@[A-Za-z0-9_]+', ' ', teks)
-
-    # Hapus hashtag tapi simpan katanya
     teks = re.sub(r'#', '', teks)
-
-    # Hapus URL
     teks = re.sub(r'http\S+', ' ', teks)
-
-    # Hapus angka
     teks = re.sub(r'\d+', ' ', teks)
 
-    # Hapus emoji
     teks = re.sub(
         "["
         u"\U0001F600-\U0001F64F"
@@ -72,30 +83,21 @@ def preprocessing(teks):
         teks
     )
 
-    # Hapus karakter selain huruf
     teks = re.sub(r'[^a-z\s]', ' ', teks)
-
-    # Hapus spasi berlebih
     teks = re.sub(r'\s+', ' ', teks).strip()
 
-    # Tokenisasi
     token = word_tokenize(teks)
 
-    # Normalisasi slang
     token = [kamus_normalisasi.get(k, k) for k in token]
-
-    # Hapus stopword
     token = [k for k in token if k not in stopword]
-
-    # Stemming
     token = [stemmer.stem(k) for k in token]
-
-    # Hapus token terlalu pendek
     token = [k for k in token if len(k) > 2]
 
     return " ".join(token)
 
+# ==============================
 # LEXICON LABEL
+# ==============================
 def lexicon_label(teks):
     skor = 0
     for kata in teks.split():
