@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs_20", "python311"]
+
+[phases.install]
+cmds = [
+  "pip install -r requirements.txt",
+  "npm install -g tweet-harvest"
+]
+
+[start]
+cmd = "gunicorn mysite.wsgi:application --bind 0.0.0.0:$PORT"
