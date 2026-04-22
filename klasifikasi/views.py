@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import subprocess
 import os
 import json
@@ -154,7 +153,6 @@ def home(request):
         'wordcloud_neg': wordcloud_neg,
         'error': error
     })
-=======
 import subprocess
 import os
 import json
@@ -396,4 +394,3 @@ def home(request):
         'wordcloud_neg': wordcloud_neg,
         'error': error
     })
->>>>>>> 8b62899785ea80fbaa1d0bbd208941b25e9a4417
