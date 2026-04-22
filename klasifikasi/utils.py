@@ -18,7 +18,6 @@ stemmer = factory.create_stemmer()
 
 stopword = set(stopwords.words('indonesian'))
 
-# Tambahan stopword manual
 stopword.update([
     "yg", "jd", "aja", "nya", "nih", "sih",
     "banget", "ga", "gak", "nggak",
@@ -39,22 +38,26 @@ with open(os.path.join(BASE_DIR, "Kamuscu.txt"), "r", encoding="utf-8") as f:
             kamus_normalisasi[kata[0]] = kata[1]
 
 # ==============================
-# LEXICON (FIX ANTI ERROR)
+# LEXICON (FIX FINAL)
 # ==============================
 pos_df = pd.read_csv(os.path.join(BASE_DIR, "positive.tsv"), sep="\t", engine="python")
 neg_df = pd.read_csv(os.path.join(BASE_DIR, "negative.tsv"), sep="\t", engine="python")
 
-print("Kolom positive:", pos_df.columns)
-print("Kolom negative:", neg_df.columns)
+print("Kolom positif:", pos_df.columns)
+print("Kolom negatif:", neg_df.columns)
 
-# Ambil kolom 'word' jika ada, kalau tidak ambil kolom pertama
+# FLEXIBLE COLUMN (word / kata)
 if "word" in pos_df.columns:
     kata_positif = set(pos_df["word"])
+elif "kata" in pos_df.columns:
+    kata_positif = set(pos_df["kata"])
 else:
     kata_positif = set(pos_df.iloc[:, 0])
 
 if "word" in neg_df.columns:
     kata_negatif = set(neg_df["word"])
+elif "kata" in neg_df.columns:
+    kata_negatif = set(neg_df["kata"])
 else:
     kata_negatif = set(neg_df.iloc[:, 0])
 
@@ -87,7 +90,6 @@ def preprocessing(teks):
     teks = re.sub(r'\s+', ' ', teks).strip()
 
     token = word_tokenize(teks)
-
     token = [kamus_normalisasi.get(k, k) for k in token]
     token = [k for k in token if k not in stopword]
     token = [stemmer.stem(k) for k in token]
