@@ -72,6 +72,16 @@ def home(request):
             # CRAWLING DATA
             # ==============================
             try:
+                # Install tweet-harvest dulu
+                subprocess.run(
+                    ["npm", "install", "tweet-harvest"],
+                    cwd=tweets_folder,
+                    capture_output=True,
+                    text=True,
+                    timeout=60
+                )
+
+                # Jalankan crawling
                 result = subprocess.run(
                     [
                         "npx",
