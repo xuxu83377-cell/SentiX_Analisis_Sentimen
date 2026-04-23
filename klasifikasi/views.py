@@ -32,6 +32,7 @@ fp = evaluation.get("fp", 0)
 fn = evaluation.get("fn", 0)
 tp = evaluation.get("tp", 0)
 
+
 # ==============================
 # VIEW
 # ==============================
@@ -45,6 +46,9 @@ def home(request):
     wordcloud_pos = None
     wordcloud_neg = None
 
+    # ==============================
+    # JALANKAN SAAT FORM DIKIRIM
+    # ==============================
     if request.method == 'POST':
 
         keyword = request.POST.get('keyword')
@@ -65,48 +69,56 @@ def home(request):
                 os.remove(file_path)
 
             # ==============================
-            # CRAWLING DATA (FIX TOTAL)
+            # CRAWLING DATA
             # ==============================
-            try:
-                result = subprocess.run(
-                    [
-                        "npx",
-                        "tweet-harvest",
-                        "-t", token,
-                        "-s", query,
-                        "-l", "10",
-                        "-o", "hasil.csv"
-                    ],
-                    cwd=BASE_DIR,
-                    capture_output=True,
-                    text=True,
-                    timeout=120
-                )
-
-                print("STDOUT:", result.stdout)
-                print("STDERR:", result.stderr)
-
-                if result.returncode != 0:
-                    error = "Crawling gagal dijalankan."
-
-            except subprocess.TimeoutExpired:
-                error = "Crawling timeout."
-            except FileNotFoundError:
-                error = "npx tidak ditemukan. Install Node.js."
-            except Exception as e:
-                error = str(e)
+            #subprocess.run(
+                [
+                    r"C:\Program Files\nodejs\npx.cmd",
+                    "tweet-harvest",
+                    "-t", token,
+                    "-s", query,
+                    "-l", "10",
+                    "-o", "hasil.csv"
+                ],
+                cwd=BASE_DIR
 
             # ==============================
             # CEK HASIL
             # ==============================
-            if not error and os.path.exists(file_path):
+            if not os.path.exists(file_path):
+                error = "Crawling gagal."
 
+            else:
                 df = pd.read_csv(file_path)
 
-                if not df.empty:
+                if df.empty:
+                    error = "Data kosong."
 
+                else:
+                    # ==============================
+                    # PREPROCESSING
+                    # ==============================
                     df['clean'] = df['full_text'].apply(preprocessing)
 
+                    print("\n===== HASIL PREPROCESSING =====\n")
+
+                    def wrap_text(text, width=40):
+                        return "\n".join(textwrap.wrap(str(text), width))
+
+                    df_display = df[['full_text', 'clean']].head(10).copy()
+                    df_display['full_text'] = df_display['full_text'].apply(lambda x: wrap_text(x, 40))
+                    df_display['clean'] = df_display['clean'].apply(lambda x: wrap_text(x, 40))
+
+                    print(tabulate(
+                        df_display,
+                        headers=['Tweet Asli', 'Hasil Preprocessing'],
+                        tablefmt='fancy_grid',
+                        showindex=False
+                    ))
+
+                    # ==============================
+                    # PREDIKSI
+                    # ==============================
                     X = vectorizer.transform(df['clean'])
                     pred = model.predict(X)
                     df['Sentimen'] = encoder.inverse_transform(pred)
@@ -116,32 +128,77 @@ def home(request):
                     pos = (df['Sentimen'] == 'Positif').sum()
                     neg = (df['Sentimen'] == 'Negatif').sum()
 
+                    # ==============================
+                    # PRINT KE TERMINAL (PENTING 🔥)
+                    # ==============================
+                    print("\n==============================")
+                    print("     CONFUSION MATRIX")
+                    print("==============================")
+                    print(f"TP (True Positive)  : {tp}")
+                    print(f"TN (True Negative)  : {tn}")
+                    print(f"FP (False Positive) : {fp}")
+                    print(f"FN (False Negative) : {fn}")
+
+                    print("\n==============================")
+                    print("     EVALUASI MODEL")
+                    print("==============================")
+                    print(f"Accuracy  : {evaluation.get('accuracy', 0):.4f}")
+                    print(f"Precision : {evaluation.get('precision', 0):.4f}")
+                    print(f"Recall    : {evaluation.get('recall', 0):.4f}")
+                    print(f"F1 Score  : {evaluation.get('f1', 0):.4f}")
+                    print("==============================\n")
+
+                    # ==============================
                     # WORDCLOUD
+                    # ==============================
                     df_pos = df[df['Sentimen'] == 'Positif']
                     df_neg = df[df['Sentimen'] == 'Negatif']
 
-                    pos_text = " ".join(df_pos['clean'])
-                    neg_text = " ".join(df_neg['clean'])
+                    pos_words = " ".join(df_pos['clean']).split()
+                    neg_words = " ".join(df_neg['clean']).split()
 
+                    pos_set = set(pos_words)
+                    neg_set = set(neg_words)
+
+                    pos_unique = [w for w in pos_words if w not in neg_set]
+                    neg_unique = [w for w in neg_words if w not in pos_set]
+
+                    pos_text = " ".join(pos_unique)
+                    neg_text = " ".join(neg_unique)
+
+                    # Wordcloud Positif
                     if pos_text.strip():
-                        wc = WordCloud(width=800, height=400, background_color='white').generate(pos_text)
+                        wc_pos = WordCloud(
+                            width=800,
+                            height=400,
+                            background_color='white',
+                            colormap='Greens',
+                            collocations=False
+                        ).generate(pos_text)
+
                         buffer = BytesIO()
-                        wc.to_image().save(buffer, format='PNG')
+                        wc_pos.to_image().save(buffer, format='PNG')
                         wordcloud_pos = base64.b64encode(buffer.getvalue()).decode('utf-8')
+                        buffer.close()
 
+                    # Wordcloud Negatif
                     if neg_text.strip():
-                        wc = WordCloud(width=800, height=400, background_color='white').generate(neg_text)
+                        wc_neg = WordCloud(
+                            width=800,
+                            height=400,
+                            background_color='white',
+                            colormap='Reds',
+                            collocations=False
+                        ).generate(neg_text)
+
                         buffer = BytesIO()
-                        wc.to_image().save(buffer, format='PNG')
+                        wc_neg.to_image().save(buffer, format='PNG')
                         wordcloud_neg = base64.b64encode(buffer.getvalue()).decode('utf-8')
+                        buffer.close()
 
-                else:
-                    error = "Data kosong dari crawling."
-
-            else:
-                if not error:
-                    error = "File hasil.csv tidak ditemukan."
-
+    # ==============================
+    # RETURN KE HTML
+    # ==============================
     return render(request, 'home.html', {
         'data': data,
         'total': total,
