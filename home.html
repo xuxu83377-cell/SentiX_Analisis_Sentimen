@@ -1,0 +1,2231 @@
+{% load static %}
+<!DOCTYPE html> 
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analisis Sentimen — Analisis Sentimen Platform X</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root {
+      --white: #ffffff;
+      --off-white: #fdf8f8;
+      --pink-50: #fff0f3;
+      --pink-100: #ffe0e8;
+      --pink-200: #ffc2d1;
+      --pink-400: #f77da3;
+      --pink-500: #f04e7b;
+      --pink-600: #d63265;
+      --dark: #1a1020;
+      --dark-muted: #4a3850;
+      --muted: #9c8fa0;
+      --border: #f0e4ea;
+      --shadow: 0 4px 32px rgba(240, 78, 123, 0.08);
+      --shadow-card: 0 2px 16px rgba(26, 16, 32, 0.06);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--off-white);
+      color: var(--dark);
+      min-height: 100vh;
+    }
+
+    /* NAV */
+    nav {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-logo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.5rem;
+      color: var(--pink-500);
+      letter-spacing: -0.5px;
+    }
+
+    .nav-logo span { color: var(--dark); }
+
+    .nav-badge {
+      background: var(--pink-50);
+      border: 1px solid var(--pink-200);
+      color: var(--pink-600);
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* HERO */
+    .hero {
+      background: linear-gradient(135deg, var(--white) 0%, var(--pink-50) 100%);
+      padding: 5rem 2rem 4rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(240,78,123,0.06) 0%, transparent 70%);
+      top: -200px; left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--pink-50);
+      border: 1px solid var(--pink-200);
+      color: var(--pink-600);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: 20px;
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.04em;
+    }
+
+    .hero-eyebrow::before { content: '◆'; font-size: 0.6rem; }
+
+    .hero h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2.2rem, 5vw, 3.5rem);
+      line-height: 1.1;
+      color: var(--dark);
+      margin-bottom: 1rem;
+      letter-spacing: -1px;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      color: var(--pink-500);
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.6;
+      font-weight: 300;
+    }
+
+    /* MAIN LAYOUT */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    /* FORM SECTION */
+    .form-section {
+      padding: 3rem 2rem;
+    }
+
+    .form-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2.5rem;
+      box-shadow: var(--shadow);
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .form-card h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.5rem;
+      margin-bottom: 0.3rem;
+      color: var(--dark);
+    }
+
+    .form-card p.subtitle {
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-bottom: 2rem;
+      font-weight: 300;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--dark-muted);
+      letter-spacing: 0.03em;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--pink-400);
+      font-size: 1rem;
+      pointer-events: none;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 11px 14px 11px 38px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--off-white);
+      color: var(--dark);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--pink-400);
+      box-shadow: 0 0 0 3px rgba(240, 78, 123, 0.1);
+      background: var(--white);
+    }
+
+    input::placeholder { color: var(--muted); }
+
+    .btn-analyze {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--pink-500), var(--pink-600));
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 20px rgba(240, 78, 123, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-analyze:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 28px rgba(240, 78, 123, 0.45);
+    }
+
+    .btn-analyze:active { transform: translateY(0); }
+
+    /* PIPELINE */
+    .pipeline-section {
+      background: var(--white);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 2rem;
+    }
+
+    .pipeline-label {
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    .pipeline {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .pipe-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pipe-icon {
+      width: 44px; height: 44px;
+      background: var(--pink-50);
+      border: 1.5px solid var(--pink-200);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      color: var(--pink-500);
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .pipe-step:hover .pipe-icon {
+      background: var(--pink-100);
+      transform: translateY(-2px);
+    }
+
+    .pipe-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--dark-muted);
+      text-align: center;
+      letter-spacing: 0.02em;
+    }
+
+    .pipe-arrow {
+      color: var(--pink-200);
+      font-size: 1rem;
+      margin: 0 6px;
+      padding-bottom: 18px;
+    }
+
+    /* RESULTS */
+    .results-section {
+      padding: 3rem 2rem;
+    }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+
+    .results-header h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.8rem;
+      color: var(--dark);
+    }
+
+    .results-header .data-tag {
+      background: var(--pink-50);
+      border: 1px solid var(--pink-200);
+      color: var(--pink-600);
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: 20px;
+    }
+
+    /* STAT CARDS */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      text-align: center;
+      box-shadow: var(--shadow-card);
+      transition: transform 0.2s;
+    }
+
+    .stat-card:hover { transform: translateY(-2px); }
+
+    .stat-card .stat-num {
+      font-family: 'DM Serif Display', serif;
+      font-size: 2rem;
+      color: var(--dark);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stat-card .stat-num.pink { color: var(--pink-500); }
+    .stat-card .stat-num.green { color: #22c55e; }
+    .stat-card .stat-num.red { color: #ef4444; }
+
+    .stat-card .stat-label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    /* TWO-COL GRID */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.8rem;
+      box-shadow: var(--shadow-card);
+    }
+
+    .card h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.1rem;
+      margin-bottom: 1.2rem;
+      color: var(--dark);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card h3 .badge {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: var(--pink-50);
+      color: var(--pink-600);
+      border: 1px solid var(--pink-200);
+    }
+
+    /* BAR CHART */
+    .chart-container {
+      height: 180px;
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      padding-bottom: 2rem;
+      position: relative;
+    }
+
+    .chart-container::after {
+      content: '';
+      position: absolute;
+      bottom: 2rem;
+      left: 0; right: 0;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .bar-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+
+    .bar-val {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--dark-muted);
+    }
+
+    .bar {
+      width: 100%;
+      border-radius: 8px 8px 0 0;
+      transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .bar.pos { background: linear-gradient(180deg, #4ade80, #22c55e); }
+    .bar.neg { background: linear-gradient(180deg, var(--pink-400), var(--pink-500)); }
+
+    .bar-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      position: absolute;
+      bottom: 0;
+    }
+
+    /* SENTIMENT METER */
+    .meter-track {
+      height: 12px;
+      background: var(--border);
+      border-radius: 100px;
+      overflow: hidden;
+      margin: 1rem 0 0.5rem;
+    }
+
+    .meter-fill {
+      height: 100%;
+      border-radius: 100px;
+      background: linear-gradient(90deg, var(--pink-500), #4ade80);
+      transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .meter-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    /* WORDCLOUD */
+    .wordcloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .word-tag {
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-weight: 500;
+      transition: transform 0.15s;
+      cursor: default;
+    }
+
+    .word-tag:hover { transform: scale(1.08); }
+
+    .word-tag.pos-word {
+      background: rgba(34, 197, 94, 0.12);
+      color: #16a34a;
+      border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    .word-tag.neg-word {
+      background: var(--pink-50);
+      color: var(--pink-600);
+      border: 1px solid var(--pink-200);
+    }
+
+    /* TABLE */
+    .table-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 1.2rem;
+    }
+
+    .table-head {
+      padding: 1.2rem 1.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .table-head h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.1rem;
+      color: var(--dark);
+    }
+
+    .search-input {
+      padding: 7px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--off-white);
+      color: var(--dark);
+      outline: none;
+      width: 200px;
+    }
+
+    .search-input:focus { border-color: var(--pink-400); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead tr {
+      background: var(--pink-50);
+    }
+
+    th {
+      padding: 10px 18px;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--dark-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    td {
+      padding: 12px 18px;
+      font-size: 0.85rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--dark-muted);
+      line-height: 1.4;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    tbody tr:hover td { background: var(--pink-50); }
+
+    .label-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    .label-badge.pos { background: rgba(34, 197, 94, 0.1); color: #16a34a; border: 1px solid rgba(34, 197, 94, 0.2); }
+    .label-badge.neg { background: var(--pink-50); color: var(--pink-600); border: 1px solid var(--pink-200); }
+
+    .label-badge::before {
+      content: '●';
+      font-size: 0.55rem;
+    }
+
+    /* PERFORMANCE */
+    .perf-grid {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 1.2rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .metric-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .metric-name {
+      font-size: 0.82rem;
+      color: var(--dark-muted);
+      font-weight: 500;
+    }
+
+    .metric-val {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.2rem;
+      color: var(--pink-500);
+    }
+
+    .metric-bar-track {
+      height: 6px;
+      background: var(--border);
+      border-radius: 100px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .metric-bar-fill {
+      height: 100%;
+      border-radius: 100px;
+      background: linear-gradient(90deg, var(--pink-400), var(--pink-500));
+    }
+
+    /* CONFUSION MATRIX */
+    .cm-grid {
+      display: grid;
+      grid-template-columns: auto 1fr 1fr;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .cm-axis {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      writing-mode: vertical-rl;
+      text-align: center;
+      padding-right: 4px;
+    }
+
+    .cm-header {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-align: center;
+      padding-bottom: 4px;
+      letter-spacing: 0.05em;
+    }
+
+    .cm-cell {
+      border-radius: 10px;
+      padding: 20px 10px;
+      text-align: center;
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.6rem;
+      line-height: 1;
+    }
+
+    .cm-cell small {
+      display: block;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.65rem;
+      font-weight: 600;
+      margin-top: 4px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .cm-tp { background: rgba(34, 197, 94, 0.15); color: #16a34a; }
+    .cm-fn { background: var(--pink-50); color: var(--pink-600); }
+    .cm-fp { background: rgba(251, 191, 36, 0.12); color: #d97706; }
+    .cm-tn { background: rgba(34, 197, 94, 0.15); color: #16a34a; }
+
+    /* LOADING STATE */
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--pink-200);
+      border-top-color: var(--pink-500);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading p {
+      font-size: 0.88rem;
+      color: var(--muted);
+      font-weight: 300;
+    }
+
+    /* HIDDEN */
+    .results-wrapper { display: none; }
+    .results-wrapper.visible { display: block; }
+
+    /* PROGRESS STEPS */
+    .progress-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 1rem;
+    }
+
+    .prog-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      opacity: 0.4;
+      transition: opacity 0.3s;
+    }
+
+    .prog-item.done { opacity: 1; color: var(--dark-muted); }
+
+    .prog-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    .prog-item.done .prog-dot { background: var(--pink-400); }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 2rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 300;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .two-col { grid-template-columns: 1fr; }
+      .perf-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ANIMATION */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-in {
+      animation: fadeInUp 0.4s ease forwards;
+    }
+
+    .delay-1 { animation-delay: 0.05s; opacity: 0; }
+    .delay-2 { animation-delay: 0.1s; opacity: 0; }
+    .delay-3 { animation-delay: 0.15s; opacity: 0; }
+    .delay-4 { animation-delay: 0.2s; opacity: 0; }
+
+    /* FOOTER MODERN */
+    .footer {
+      background: linear-gradient(135deg, var(--dark), #2a1a30);
+      color: #ffffff;
+      padding: 3rem 2rem;
+      text-align: center;
+      margin-top: 3rem;
+    }
+
+    .footer-social {
+      margin-bottom: 1.5rem;
+    }
+
+    .footer-social a {
+      color: #ffffff;
+      margin: 0 12px;
+      font-size: 1.2rem;
+      transition: transform 0.2s, color 0.2s;
+    }
+
+    .footer-social a:hover {
+      color: var(--pink-400);
+      transform: translateY(-3px);
+    }
+
+    .footer-top {
+      margin-bottom: 1rem;
+    }
+
+    .footer-top a {
+      color: var(--pink-200);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .footer-top a:hover {
+      color: var(--pink-400);
+    }
+
+    .footer-links {
+      margin-bottom: 1rem;
+    }
+
+    .footer-links a {
+      color: #cccccc;
+      margin: 0 10px;
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+
+    .footer-links a:hover {
+      color: var(--pink-400);
+    }
+
+    .footer-copy {
+      font-size: 0.75rem;
+      color: #aaaaaa;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+{% if data %}
+<script>
+  window.onload = function() {
+    document.querySelector('.results-section').scrollIntoView({ behavior: 'smooth' });
+  }
+</script>
+{% endif %}
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo">Senti<span>X</span></div>
+    <div class="nav-badge">Platform X Analysis</div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">SVM · TF-IDF · Lexicon-Based</div>
+    <h1>Analisis Sentimen<br /><em>Opini Masyarakat</em> di X</h1>
+    <p>Masukkan kata kunci dan token autentikasi untuk memulai crawling, preprocessing, serta klasifikasi sentimen secara otomatis.</p>
+  </section>
+
+  <!-- FORM -->
+  <section class="form-section">
+    <div class="container">
+      <div class="form-card animate-in">
+        <h2>Input Parameter</h2>
+        <p class="subtitle">Isi form berikut untuk memulai proses analisis</p>
+
+        <form method="POST">
+            {% csrf_token %}
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="keyword">Kata Kunci (Keyword)</label>
+              <div class="input-wrap">
+                <span class="input-icon"></span>
+                <input type="text" id="keyword" name="keyword" placeholder="contoh: banjir jakarta" required aria-label="Kata kunci pencarian tweet" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="auth_token">Auth Token Twitter</label>
+              <div class="input-wrap">
+                <span class="input-icon"></span>
+                <input type="password" id="auth_token" name="auth_token" placeholder="Masukkan auth token Anda" required aria-label="Token autentikasi Twitter" />
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-analyze">
+            <span>✦</span> Mulai Analisis
+          </button>
+        </form>
+        {% if error %}
+  <div style="margin-top:15px; padding:10px; background:#ffe0e8; color:#d63265; border-radius:8px;">
+    {{ error }}
+  </div>
+          {% endif %}
+        
+
+        <!-- LOADING -->
+        <div class="loading" id="loadingState">
+          <div class="spinner"></div>
+          <p id="loadingText">Menginisialisasi proses...</p>
+          <div class="progress-steps" id="progressSteps">
+            <div class="prog-item" id="prog1"><div class="prog-dot"></div>Crawling data dari Platform X</div>
+            <div class="prog-item" id="prog2"><div class="prog-dot"></div>Preprocessing & normalisasi teks</div>
+            <div class="prog-item" id="prog3"><div class="prog-dot"></div>Pelabelan lexicon-based</div>
+            <div class="prog-item" id="prog4"><div class="prog-dot"></div>Ekstraksi fitur TF-IDF</div>
+            <div class="prog-item" id="prog5"><div class="prog-dot"></div>Klasifikasi SVM</div>
+            <div class="prog-item" id="prog6"><div class="prog-dot"></div>Evaluasi model</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PIPELINE -->
+  <section class="pipeline-section">
+    <div class="container">
+      <p class="pipeline-label">Alur Pemrosesan Data</p>
+      <div class="pipeline">
+        <div class="pipe-step">
+          <div class="pipe-icon">🕸️</div>
+          <div class="pipe-label">Crawling<br/>Tweet Harvest</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🔡</div>
+          <div class="pipe-label">Case<br/>Folding</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🧹</div>
+          <div class="pipe-label">Cleansing</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">✂️</div>
+          <div class="pipe-label">Tokenisasi</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">📖</div>
+          <div class="pipe-label">Normalisasi<br/>Slang</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🚫</div>
+          <div class="pipe-label">Stopword<br/>Removal</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🌿</div>
+          <div class="pipe-label">Stemming</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🏷️</div>
+          <div class="pipe-label">Lexicon<br/>Labeling</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">📊</div>
+          <div class="pipe-label">TF-IDF</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🤖</div>
+          <div class="pipe-label">SVM<br/>Klasifikasi</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section class="results-section">
+    <div class="container">
+        <div class="results-wrapper {% if data %}visible{% endif %}">
+
+            {% if data %}
+            
+            <div class="results-header">
+              <h2>Hasil Analisis</h2>
+              <div class="data-tag">{{ total }} data</div>
+            </div>
+            
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-num">{{ total }}</div>
+                <div class="stat-label">Total Data</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-num green">{{ pos }}</div>
+                <div class="stat-label">Sentimen Positif</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-num red">{{ neg }}</div>
+                <div class="stat-label">Sentimen Negatif</div>
+              </div>
+      
+            </div>
+            
+  <div class="two-col">
+            
+            <div class="card">
+    <h3>WordCloud Positif</h3>
+    {% if wordcloud_pos %}
+      <img src="data:image/png;base64,{{ wordcloud_pos }}" 
+           style="width:100%; border-radius:12px;" />
+    {% else %}
+      <p>Tidak ada data positif.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>WordCloud Negatif</h3>
+    {% if wordcloud_neg %}
+      <img src="data:image/png;base64,{{ wordcloud_neg }}" 
+           style="width:100%; border-radius:12px;" />
+    {% else %}
+      <p>Tidak ada data negatif.</p>
+    {% endif %}
+  </div>
+</div>
+<div class="table-card">
+              <div class="table-head">
+                <h3>Tabel Hasil Klasifikasi</h3>
+              </div>
+            
+              <div style="overflow-x:auto;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Tweet</th>
+                      <th>Label</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for item in data %}
+                    <tr>
+                      <td>{{ forloop.counter }}</td>
+                      <td>{{ item.full_text }}</td>
+                      <td>
+                        <span class="label-badge {% if item.Sentimen == 'Positif' %}pos{% else %}neg{% endif %}">
+                          {{ item.Sentimen }}
+                        </span>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+</div>
+            
+            {% endif %}
+            
+            </div>
+          </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+  <div class="footer-social">
+    <a href="https://x.com/xixi_xuxu14559"><i class="fab fa-x-twitter"></i></a>
+    <a href="https://www.facebook.com/profile.php?id=100075277432207"><i class="fab fa-facebook"></i></a>
+    <a href="https://www.instagram.com/rismaaaaa25._?igsh=NGR0cHNjb3d6Y3Bh"><i class="fab fa-instagram"></i></a>
+    <a href="https://youtube.com/@rismarisma5785?si=LnBNys9njSqZPVUt"><i class="fab fa-youtube"></i></a>
+    <a href="mailto:cacashsuaie233@gmail.com">
+      cacashsuaie233@gmail.com
+    </a>
+  </div>
+
+  <div class="footer-top">
+    <a href="#">Kembali ke atas ↑</a>
+  </div>
+
+  <div class="footer-links">
+    <a href="#">Privasi</a>
+    <a href="#">Ketentuan Situs</a>
+    <a href="#">Preferensi Cookie</a>
+  </div>
+
+  <p class="footer-copy">
+    © 2026 SentiX — Sistem Analisis Sentimen Platform X. Hak cipta dilindungi undang-undang.
+  </p>
+  </footer>
+
+</body>
+{% load static %}
+<!DOCTYPE html> 
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analisis Sentimen — Analisis Sentimen Platform X</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root {
+      --white: #ffffff;
+      --off-white: #fdf8f8;
+      --pink-50: #fff0f3;
+      --pink-100: #ffe0e8;
+      --pink-200: #ffc2d1;
+      --pink-400: #f77da3;
+      --pink-500: #f04e7b;
+      --pink-600: #d63265;
+      --dark: #1a1020;
+      --dark-muted: #4a3850;
+      --muted: #9c8fa0;
+      --border: #f0e4ea;
+      --shadow: 0 4px 32px rgba(240, 78, 123, 0.08);
+      --shadow-card: 0 2px 16px rgba(26, 16, 32, 0.06);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--off-white);
+      color: var(--dark);
+      min-height: 100vh;
+    }
+
+    /* NAV */
+    nav {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-logo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.5rem;
+      color: var(--pink-500);
+      letter-spacing: -0.5px;
+    }
+
+    .nav-logo span { color: var(--dark); }
+
+    .nav-badge {
+      background: var(--pink-50);
+      border: 1px solid var(--pink-200);
+      color: var(--pink-600);
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* HERO */
+    .hero {
+      background: linear-gradient(135deg, var(--white) 0%, var(--pink-50) 100%);
+      padding: 5rem 2rem 4rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(240,78,123,0.06) 0%, transparent 70%);
+      top: -200px; left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--pink-50);
+      border: 1px solid var(--pink-200);
+      color: var(--pink-600);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: 20px;
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.04em;
+    }
+
+    .hero-eyebrow::before { content: '◆'; font-size: 0.6rem; }
+
+    .hero h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2.2rem, 5vw, 3.5rem);
+      line-height: 1.1;
+      color: var(--dark);
+      margin-bottom: 1rem;
+      letter-spacing: -1px;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      color: var(--pink-500);
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.6;
+      font-weight: 300;
+    }
+
+    /* MAIN LAYOUT */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    /* FORM SECTION */
+    .form-section {
+      padding: 3rem 2rem;
+    }
+
+    .form-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2.5rem;
+      box-shadow: var(--shadow);
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .form-card h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.5rem;
+      margin-bottom: 0.3rem;
+      color: var(--dark);
+    }
+
+    .form-card p.subtitle {
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-bottom: 2rem;
+      font-weight: 300;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--dark-muted);
+      letter-spacing: 0.03em;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--pink-400);
+      font-size: 1rem;
+      pointer-events: none;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 11px 14px 11px 38px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--off-white);
+      color: var(--dark);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--pink-400);
+      box-shadow: 0 0 0 3px rgba(240, 78, 123, 0.1);
+      background: var(--white);
+    }
+
+    input::placeholder { color: var(--muted); }
+
+    .btn-analyze {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--pink-500), var(--pink-600));
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 20px rgba(240, 78, 123, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-analyze:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 28px rgba(240, 78, 123, 0.45);
+    }
+
+    .btn-analyze:active { transform: translateY(0); }
+
+    /* PIPELINE */
+    .pipeline-section {
+      background: var(--white);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 2rem;
+    }
+
+    .pipeline-label {
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    .pipeline {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .pipe-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pipe-icon {
+      width: 44px; height: 44px;
+      background: var(--pink-50);
+      border: 1.5px solid var(--pink-200);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      color: var(--pink-500);
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .pipe-step:hover .pipe-icon {
+      background: var(--pink-100);
+      transform: translateY(-2px);
+    }
+
+    .pipe-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--dark-muted);
+      text-align: center;
+      letter-spacing: 0.02em;
+    }
+
+    .pipe-arrow {
+      color: var(--pink-200);
+      font-size: 1rem;
+      margin: 0 6px;
+      padding-bottom: 18px;
+    }
+
+    /* RESULTS */
+    .results-section {
+      padding: 3rem 2rem;
+    }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+
+    .results-header h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.8rem;
+      color: var(--dark);
+    }
+
+    .results-header .data-tag {
+      background: var(--pink-50);
+      border: 1px solid var(--pink-200);
+      color: var(--pink-600);
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: 20px;
+    }
+
+    /* STAT CARDS */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      text-align: center;
+      box-shadow: var(--shadow-card);
+      transition: transform 0.2s;
+    }
+
+    .stat-card:hover { transform: translateY(-2px); }
+
+    .stat-card .stat-num {
+      font-family: 'DM Serif Display', serif;
+      font-size: 2rem;
+      color: var(--dark);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stat-card .stat-num.pink { color: var(--pink-500); }
+    .stat-card .stat-num.green { color: #22c55e; }
+    .stat-card .stat-num.red { color: #ef4444; }
+
+    .stat-card .stat-label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    /* TWO-COL GRID */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.8rem;
+      box-shadow: var(--shadow-card);
+    }
+
+    .card h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.1rem;
+      margin-bottom: 1.2rem;
+      color: var(--dark);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card h3 .badge {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: var(--pink-50);
+      color: var(--pink-600);
+      border: 1px solid var(--pink-200);
+    }
+
+    /* BAR CHART */
+    .chart-container {
+      height: 180px;
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      padding-bottom: 2rem;
+      position: relative;
+    }
+
+    .chart-container::after {
+      content: '';
+      position: absolute;
+      bottom: 2rem;
+      left: 0; right: 0;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .bar-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+
+    .bar-val {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--dark-muted);
+    }
+
+    .bar {
+      width: 100%;
+      border-radius: 8px 8px 0 0;
+      transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .bar.pos { background: linear-gradient(180deg, #4ade80, #22c55e); }
+    .bar.neg { background: linear-gradient(180deg, var(--pink-400), var(--pink-500)); }
+
+    .bar-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      position: absolute;
+      bottom: 0;
+    }
+
+    /* SENTIMENT METER */
+    .meter-track {
+      height: 12px;
+      background: var(--border);
+      border-radius: 100px;
+      overflow: hidden;
+      margin: 1rem 0 0.5rem;
+    }
+
+    .meter-fill {
+      height: 100%;
+      border-radius: 100px;
+      background: linear-gradient(90deg, var(--pink-500), #4ade80);
+      transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .meter-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    /* WORDCLOUD */
+    .wordcloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .word-tag {
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-weight: 500;
+      transition: transform 0.15s;
+      cursor: default;
+    }
+
+    .word-tag:hover { transform: scale(1.08); }
+
+    .word-tag.pos-word {
+      background: rgba(34, 197, 94, 0.12);
+      color: #16a34a;
+      border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    .word-tag.neg-word {
+      background: var(--pink-50);
+      color: var(--pink-600);
+      border: 1px solid var(--pink-200);
+    }
+
+    /* TABLE */
+    .table-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 1.2rem;
+    }
+
+    .table-head {
+      padding: 1.2rem 1.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .table-head h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.1rem;
+      color: var(--dark);
+    }
+
+    .search-input {
+      padding: 7px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--off-white);
+      color: var(--dark);
+      outline: none;
+      width: 200px;
+    }
+
+    .search-input:focus { border-color: var(--pink-400); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead tr {
+      background: var(--pink-50);
+    }
+
+    th {
+      padding: 10px 18px;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--dark-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    td {
+      padding: 12px 18px;
+      font-size: 0.85rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--dark-muted);
+      line-height: 1.4;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    tbody tr:hover td { background: var(--pink-50); }
+
+    .label-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    .label-badge.pos { background: rgba(34, 197, 94, 0.1); color: #16a34a; border: 1px solid rgba(34, 197, 94, 0.2); }
+    .label-badge.neg { background: var(--pink-50); color: var(--pink-600); border: 1px solid var(--pink-200); }
+
+    .label-badge::before {
+      content: '●';
+      font-size: 0.55rem;
+    }
+
+    /* PERFORMANCE */
+    .perf-grid {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 1.2rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .metric-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .metric-name {
+      font-size: 0.82rem;
+      color: var(--dark-muted);
+      font-weight: 500;
+    }
+
+    .metric-val {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.2rem;
+      color: var(--pink-500);
+    }
+
+    .metric-bar-track {
+      height: 6px;
+      background: var(--border);
+      border-radius: 100px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .metric-bar-fill {
+      height: 100%;
+      border-radius: 100px;
+      background: linear-gradient(90deg, var(--pink-400), var(--pink-500));
+    }
+
+    /* CONFUSION MATRIX */
+    .cm-grid {
+      display: grid;
+      grid-template-columns: auto 1fr 1fr;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .cm-axis {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      writing-mode: vertical-rl;
+      text-align: center;
+      padding-right: 4px;
+    }
+
+    .cm-header {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-align: center;
+      padding-bottom: 4px;
+      letter-spacing: 0.05em;
+    }
+
+    .cm-cell {
+      border-radius: 10px;
+      padding: 20px 10px;
+      text-align: center;
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.6rem;
+      line-height: 1;
+    }
+
+    .cm-cell small {
+      display: block;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.65rem;
+      font-weight: 600;
+      margin-top: 4px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .cm-tp { background: rgba(34, 197, 94, 0.15); color: #16a34a; }
+    .cm-fn { background: var(--pink-50); color: var(--pink-600); }
+    .cm-fp { background: rgba(251, 191, 36, 0.12); color: #d97706; }
+    .cm-tn { background: rgba(34, 197, 94, 0.15); color: #16a34a; }
+
+    /* LOADING STATE */
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--pink-200);
+      border-top-color: var(--pink-500);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading p {
+      font-size: 0.88rem;
+      color: var(--muted);
+      font-weight: 300;
+    }
+
+    /* HIDDEN */
+    .results-wrapper { display: none; }
+    .results-wrapper.visible { display: block; }
+
+    /* PROGRESS STEPS */
+    .progress-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 1rem;
+    }
+
+    .prog-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      opacity: 0.4;
+      transition: opacity 0.3s;
+    }
+
+    .prog-item.done { opacity: 1; color: var(--dark-muted); }
+
+    .prog-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    .prog-item.done .prog-dot { background: var(--pink-400); }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 2rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 300;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .two-col { grid-template-columns: 1fr; }
+      .perf-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ANIMATION */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-in {
+      animation: fadeInUp 0.4s ease forwards;
+    }
+
+    .delay-1 { animation-delay: 0.05s; opacity: 0; }
+    .delay-2 { animation-delay: 0.1s; opacity: 0; }
+    .delay-3 { animation-delay: 0.15s; opacity: 0; }
+    .delay-4 { animation-delay: 0.2s; opacity: 0; }
+
+    /* FOOTER MODERN */
+    .footer {
+      background: linear-gradient(135deg, var(--dark), #2a1a30);
+      color: #ffffff;
+      padding: 3rem 2rem;
+      text-align: center;
+      margin-top: 3rem;
+    }
+
+    .footer-social {
+      margin-bottom: 1.5rem;
+    }
+
+    .footer-social a {
+      color: #ffffff;
+      margin: 0 12px;
+      font-size: 1.2rem;
+      transition: transform 0.2s, color 0.2s;
+    }
+
+    .footer-social a:hover {
+      color: var(--pink-400);
+      transform: translateY(-3px);
+    }
+
+    .footer-top {
+      margin-bottom: 1rem;
+    }
+
+    .footer-top a {
+      color: var(--pink-200);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .footer-top a:hover {
+      color: var(--pink-400);
+    }
+
+    .footer-links {
+      margin-bottom: 1rem;
+    }
+
+    .footer-links a {
+      color: #cccccc;
+      margin: 0 10px;
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+
+    .footer-links a:hover {
+      color: var(--pink-400);
+    }
+
+    .footer-copy {
+      font-size: 0.75rem;
+      color: #aaaaaa;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+{% if data %}
+<script>
+  window.onload = function() {
+    document.querySelector('.results-section').scrollIntoView({ behavior: 'smooth' });
+  }
+</script>
+{% endif %}
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo">Senti<span>X</span></div>
+    <div class="nav-badge">Platform X Analysis</div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">SVM · TF-IDF · Lexicon-Based</div>
+    <h1>Analisis Sentimen<br /><em>Opini Masyarakat</em> di X</h1>
+    <p>Masukkan kata kunci dan token autentikasi untuk memulai crawling, preprocessing, serta klasifikasi sentimen secara otomatis.</p>
+  </section>
+
+  <!-- FORM -->
+  <section class="form-section">
+    <div class="container">
+      <div class="form-card animate-in">
+        <h2>Input Parameter</h2>
+        <p class="subtitle">Isi form berikut untuk memulai proses analisis</p>
+
+        <form method="POST">
+            {% csrf_token %}
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="keyword">Kata Kunci (Keyword)</label>
+              <div class="input-wrap">
+                <span class="input-icon"></span>
+                <input type="text" id="keyword" name="keyword" placeholder="contoh: banjir jakarta" required aria-label="Kata kunci pencarian tweet" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="auth_token">Auth Token Twitter</label>
+              <div class="input-wrap">
+                <span class="input-icon"></span>
+                <input type="password" id="auth_token" name="auth_token" placeholder="Masukkan auth token Anda" required aria-label="Token autentikasi Twitter" />
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-analyze">
+            <span>✦</span> Mulai Analisis
+          </button>
+        </form>
+        {% if error %}
+  <div style="margin-top:15px; padding:10px; background:#ffe0e8; color:#d63265; border-radius:8px;">
+    {{ error }}
+  </div>
+          {% endif %}
+        
+
+        <!-- LOADING -->
+        <div class="loading" id="loadingState">
+          <div class="spinner"></div>
+          <p id="loadingText">Menginisialisasi proses...</p>
+          <div class="progress-steps" id="progressSteps">
+            <div class="prog-item" id="prog1"><div class="prog-dot"></div>Crawling data dari Platform X</div>
+            <div class="prog-item" id="prog2"><div class="prog-dot"></div>Preprocessing & normalisasi teks</div>
+            <div class="prog-item" id="prog3"><div class="prog-dot"></div>Pelabelan lexicon-based</div>
+            <div class="prog-item" id="prog4"><div class="prog-dot"></div>Ekstraksi fitur TF-IDF</div>
+            <div class="prog-item" id="prog5"><div class="prog-dot"></div>Klasifikasi SVM</div>
+            <div class="prog-item" id="prog6"><div class="prog-dot"></div>Evaluasi model</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PIPELINE -->
+  <section class="pipeline-section">
+    <div class="container">
+      <p class="pipeline-label">Alur Pemrosesan Data</p>
+      <div class="pipeline">
+        <div class="pipe-step">
+          <div class="pipe-icon">🕸️</div>
+          <div class="pipe-label">Crawling<br/>Tweet Harvest</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🔡</div>
+          <div class="pipe-label">Case<br/>Folding</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🧹</div>
+          <div class="pipe-label">Cleansing</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">✂️</div>
+          <div class="pipe-label">Tokenisasi</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">📖</div>
+          <div class="pipe-label">Normalisasi<br/>Slang</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🚫</div>
+          <div class="pipe-label">Stopword<br/>Removal</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🌿</div>
+          <div class="pipe-label">Stemming</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🏷️</div>
+          <div class="pipe-label">Lexicon<br/>Labeling</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">📊</div>
+          <div class="pipe-label">TF-IDF</div>
+        </div>
+        <div class="pipe-arrow">›</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🤖</div>
+          <div class="pipe-label">SVM<br/>Klasifikasi</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section class="results-section">
+    <div class="container">
+        <div class="results-wrapper {% if data %}visible{% endif %}">
+
+            {% if data %}
+            
+            <div class="results-header">
+              <h2>Hasil Analisis</h2>
+              <div class="data-tag">{{ total }} data</div>
+            </div>
+            
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-num">{{ total }}</div>
+                <div class="stat-label">Total Data</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-num green">{{ pos }}</div>
+                <div class="stat-label">Sentimen Positif</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-num red">{{ neg }}</div>
+                <div class="stat-label">Sentimen Negatif</div>
+              </div>
+      
+            </div>
+            
+  <div class="two-col">
+            
+            <div class="card">
+    <h3>WordCloud Positif</h3>
+    {% if wordcloud_pos %}
+      <img src="data:image/png;base64,{{ wordcloud_pos }}" 
+           style="width:100%; border-radius:12px;" />
+    {% else %}
+      <p>Tidak ada data positif.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>WordCloud Negatif</h3>
+    {% if wordcloud_neg %}
+      <img src="data:image/png;base64,{{ wordcloud_neg }}" 
+           style="width:100%; border-radius:12px;" />
+    {% else %}
+      <p>Tidak ada data negatif.</p>
+    {% endif %}
+  </div>
+</div>
+<div class="table-card">
+              <div class="table-head">
+                <h3>Tabel Hasil Klasifikasi</h3>
+              </div>
+            
+              <div style="overflow-x:auto;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Tweet</th>
+                      <th>Label</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for item in data %}
+                    <tr>
+                      <td>{{ forloop.counter }}</td>
+                      <td>{{ item.full_text }}</td>
+                      <td>
+                        <span class="label-badge {% if item.Sentimen == 'Positif' %}pos{% else %}neg{% endif %}">
+                          {{ item.Sentimen }}
+                        </span>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+</div>
+            
+            {% endif %}
+            
+            </div>
+          </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+  <div class="footer-social">
+    <a href="https://x.com/xixi_xuxu14559"><i class="fab fa-x-twitter"></i></a>
+    <a href="https://www.facebook.com/profile.php?id=100075277432207"><i class="fab fa-facebook"></i></a>
+    <a href="https://www.instagram.com/rismaaaaa25._?igsh=NGR0cHNjb3d6Y3Bh"><i class="fab fa-instagram"></i></a>
+    <a href="https://youtube.com/@rismarisma5785?si=LnBNys9njSqZPVUt"><i class="fab fa-youtube"></i></a>
+    <a href="mailto:cacashsuaie233@gmail.com">
+      cacashsuaie233@gmail.com
+    </a>
+  </div>
+
+  <div class="footer-top">
+    <a href="#">Kembali ke atas ↑</a>
+  </div>
+
+  <div class="footer-links">
+    <a href="#">Privasi</a>
+    <a href="#">Ketentuan Situs</a>
+    <a href="#">Preferensi Cookie</a>
+  </div>
+
+  <p class="footer-copy">
+    © 2026 SentiX — Sistem Analisis Sentimen Platform X. Hak cipta dilindungi undang-undang.
+  </p>
+  </footer>
+
+</body>
+</html>
