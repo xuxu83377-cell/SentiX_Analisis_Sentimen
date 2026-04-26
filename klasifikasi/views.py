@@ -29,6 +29,33 @@ fn = evaluation.get("fn", 0)
 tp = evaluation.get("tp", 0)
 
 # ==========================
+# CARI LOKASI NPX
+# ==========================
+def find_npx():
+    """Cari lokasi npx dari berbagai kemungkinan path."""
+    # Coba shutil.which dulu dengan PATH yang lengkap
+    os.environ["PATH"] = "/usr/local/bin:/usr/bin:/bin:" + os.environ.get("PATH", "")
+    found = shutil.which("npx")
+    if found:
+        return found
+
+    # Fallback: cek path umum secara manual
+    candidates = [
+        "/usr/local/bin/npx",
+        "/usr/bin/npx",
+        "/usr/local/lib/node_modules/.bin/npx",
+        "/usr/local/lib/node_modules/npm/bin/npx-cli.js",
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+
+    return None
+
+NPX_PATH = find_npx()
+print(f"[STARTUP] npx path: {NPX_PATH}")
+
+# ==========================
 # VIEW
 # ==========================
 def home(request):
@@ -64,17 +91,22 @@ def home(request):
         # CRAWLING + FALLBACK
         # ==========================
         try:
-            # shutil.which lebih reliable daripada subprocess "which npx"
-            npx_path = shutil.which("npx")
-            print(f"npx ditemukan di: {npx_path}")
-
-            if npx_path is None:
-                print("NPX tidak ditemukan, pakai backup")
+            if NPX_PATH is None:
+                print("NPX tidak ditemukan sama sekali, pakai backup")
                 file_path = backup_path
             else:
+                print(f"Menjalankan crawling dengan npx: {NPX_PATH}")
+
+                env = {
+                    **os.environ,
+                    "PLAYWRIGHT_BROWSERS_PATH": "/ms-playwright",
+                    "DISPLAY": "",
+                    "PATH": "/usr/local/bin:/usr/bin:/bin:" + os.environ.get("PATH", ""),
+                }
+
                 result = subprocess.run(
                     [
-                        npx_path, "--yes", "tweet-harvest@latest",
+                        NPX_PATH, "--yes", "tweet-harvest@latest",
                         "--token", token,
                         "-s", query,
                         "-l", "100",
@@ -85,18 +117,14 @@ def home(request):
                     capture_output=True,
                     text=True,
                     timeout=120,
-                    env={
-                        **os.environ,
-                        "PLAYWRIGHT_BROWSERS_PATH": "/ms-playwright",
-                        "DISPLAY": "",
-                        "PATH": os.environ.get("PATH", "") + ":/usr/local/bin:/usr/bin",
-                    }
+                    env=env,
                 )
 
                 print("===== STDOUT =====")
                 print(result.stdout)
                 print("===== STDERR =====")
                 print(result.stderr)
+                print(f"Return code: {result.returncode}")
 
                 if result.returncode != 0:
                     print("Crawling gagal (returncode != 0), pakai backup")
@@ -104,12 +132,14 @@ def home(request):
                 elif not os.path.exists(file_path):
                     print("File output tidak terbuat, pakai backup")
                     file_path = backup_path
+                else:
+                    print("Crawling berhasil!")
 
         except subprocess.TimeoutExpired:
             print("Crawling timeout (>120 detik), pakai backup")
             file_path = backup_path
-        except FileNotFoundError:
-            print("npx tidak ditemukan di PATH, pakai backup")
+        except FileNotFoundError as e:
+            print(f"FileNotFoundError: {str(e)}, pakai backup")
             file_path = backup_path
         except Exception as e:
             print(f"Error tidak terduga: {str(e)}")
@@ -133,7 +163,6 @@ def home(request):
         # BACA CSV
         # ==========================
         try:
-            # tweet-harvest pakai separator ";"
             df = pd.read_csv(file_path, sep=";")
         except Exception as e:
             error = f"Gagal membaca file CSV: {str(e)}"
@@ -147,7 +176,7 @@ def home(request):
             })
 
         if "full_text" not in df.columns:
-            error = f"Kolom 'full_text' tidak ditemukan. Kolom: {list(df.columns)}"
+            error = f"Kolom 'full_text' tidak ditemukan. Kolom tersedia: {list(df.columns)}"
             return render(request, "home.html", {
                 "error": error,
                 "tn": tn, "fp": fp, "fn": fn, "tp": tp,

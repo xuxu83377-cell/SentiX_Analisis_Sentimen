@@ -9,12 +9,16 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
+# Pastikan PATH include lokasi node & npx
+ENV PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
 # Install Playwright Chromium browser
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN npx playwright install chromium --with-deps
 
-# Verifikasi Node.js & npx tersedia
+# Verifikasi Node.js & npx tersedia saat build
 RUN node --version && npm --version && npx --version
+RUN which npx && echo "npx path OK"
 
 # Install Python dependencies
 COPY requirements.txt .
@@ -26,7 +30,5 @@ COPY . .
 # Buat folder untuk hasil crawling
 RUN mkdir -p tweets-data
 
-EXPOSE 8000
-
-# Jalankan Django pakai gunicorn
-CMD ["gunicorn", "mysite.wsgi:application", "--bind", "0.0.0.0:8000", "--timeout", "180", "--workers", "2"]
+# Railway otomatis set PORT — gunakan shell form agar $PORT terbaca
+CMD gunicorn mysite.wsgi:application --bind 0.0.0.0:$PORT --timeout 180 --workers 2
