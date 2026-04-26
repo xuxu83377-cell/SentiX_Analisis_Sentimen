@@ -1,4 +1,5 @@
 import subprocess
+import shutil
 import os
 import json
 import pickle
@@ -53,7 +54,7 @@ def home(request):
         file_path = os.path.join(output_dir, "hasil.csv")
         backup_path = os.path.join(output_dir, "backup.csv")
 
-        # Hapus file lama agar tidak terbaca data sebelumnya
+        # Hapus file lama
         if os.path.exists(file_path):
             os.remove(file_path)
 
@@ -63,65 +64,55 @@ def home(request):
         # CRAWLING + FALLBACK
         # ==========================
         try:
-            # Cek apakah npx tersedia
-            check_npx = subprocess.run(
-                ["which", "npx"],
-                capture_output=True,
-                text=True
-            )
+            # shutil.which lebih reliable daripada subprocess "which npx"
+            npx_path = shutil.which("npx")
+            print(f"npx ditemukan di: {npx_path}")
 
-            if check_npx.returncode != 0:
+            if npx_path is None:
                 print("NPX tidak ditemukan, pakai backup")
                 file_path = backup_path
             else:
                 result = subprocess.run(
                     [
-                        "npx", "--yes", "tweet-harvest@latest",
-                        "--token", token,       # FIX: -t → --token
+                        npx_path, "--yes", "tweet-harvest@latest",
+                        "--token", token,
                         "-s", query,
-                        "-l", "100",            # FIX: naikkan dari 10 → 100
+                        "-l", "100",
                         "-o", file_path,
-                        "--headless", "true"    # WAJIB: agar jalan di Railway/server
+                        "--headless", "true"
                     ],
                     cwd=output_dir,
                     capture_output=True,
                     text=True,
-                    timeout=120,               # FIX: dari 15 → 120 detik
+                    timeout=120,
                     env={
                         **os.environ,
-                        # Path Chromium di Docker Railway
                         "PLAYWRIGHT_BROWSERS_PATH": "/ms-playwright",
-                        # Paksa headless, tidak butuh display
                         "DISPLAY": "",
+                        "PATH": os.environ.get("PATH", "") + ":/usr/local/bin:/usr/bin",
                     }
                 )
 
                 print("===== STDOUT =====")
                 print(result.stdout)
-
                 print("===== STDERR =====")
                 print(result.stderr)
 
-                # Kalau crawling gagal → fallback ke backup
                 if result.returncode != 0:
                     print("Crawling gagal (returncode != 0), pakai backup")
                     file_path = backup_path
-
-                # Kalau file tidak terbuat walau returncode 0 → fallback
                 elif not os.path.exists(file_path):
-                    print("File output tidak ditemukan walau returncode 0, pakai backup")
+                    print("File output tidak terbuat, pakai backup")
                     file_path = backup_path
 
         except subprocess.TimeoutExpired:
             print("Crawling timeout (>120 detik), pakai backup")
             file_path = backup_path
-
         except FileNotFoundError:
             print("npx tidak ditemukan di PATH, pakai backup")
             file_path = backup_path
-
         except Exception as e:
-            print(f"Error tidak terduga saat crawling: {str(e)}")
+            print(f"Error tidak terduga: {str(e)}")
             file_path = backup_path
 
         # ==========================
@@ -142,7 +133,8 @@ def home(request):
         # BACA CSV
         # ==========================
         try:
-            df = pd.read_csv(file_path, sep=";")  # tweet-harvest pakai separator ";"
+            # tweet-harvest pakai separator ";"
+            df = pd.read_csv(file_path, sep=";")
         except Exception as e:
             error = f"Gagal membaca file CSV: {str(e)}"
             return render(request, "home.html", {
@@ -154,9 +146,8 @@ def home(request):
                 "f1": evaluation.get("f1", 0),
             })
 
-        # Cek kolom full_text tersedia
         if "full_text" not in df.columns:
-            error = f"Kolom 'full_text' tidak ditemukan. Kolom tersedia: {list(df.columns)}"
+            error = f"Kolom 'full_text' tidak ditemukan. Kolom: {list(df.columns)}"
             return render(request, "home.html", {
                 "error": error,
                 "tn": tn, "fp": fp, "fn": fn, "tp": tp,
@@ -181,8 +172,6 @@ def home(request):
         # PREPROCESSING
         # ==========================
         df["clean"] = df["full_text"].apply(preprocessing)
-
-        # Hapus baris dengan hasil clean kosong
         df = df[df["clean"].str.strip() != ""]
         df = df.dropna(subset=["clean"])
 
@@ -225,7 +214,6 @@ def home(request):
                 background_color="white",
                 colormap=color
             ).generate(text)
-
             buffer = BytesIO()
             wc.to_image().save(buffer, format="PNG")
             return base64.b64encode(buffer.getvalue()).decode()
