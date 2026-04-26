@@ -22,7 +22,7 @@ RUN which npx && echo "npx path OK"
 
 # Install Python dependencies
 COPY requirements.txt .
-RUN pip3 install -r requirements.txt --break-system-packages
+RUN pip3 install -r requirements.txt
 
 # Copy semua file project
 COPY . .
