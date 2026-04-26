@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["nodejs_20", "python311"]
+nixPkgs = ["python311", "nodejs_20"]
 
 [phases.install]
 cmds = [
@@ -7,5 +7,11 @@ cmds = [
   "npm install -g tweet-harvest"
 ]
 
-[start]
+[phases.build]
+cmds = [
+  "python manage.py collectstatic --noinput",
+  "python manage.py migrate"
+]
+
+[phases.start]
 cmd = "gunicorn mysite.wsgi:application --bind 0.0.0.0:$PORT"
