@@ -60,34 +60,45 @@ def home(request):
         query = f"{keyword} lang:id"
 
         # ==========================
-        # CRAWLING
+        # CRAWLING + FALLBACK
         # ==========================
         try:
-            result = subprocess.run(
-                [
-                    "npx",
-                    "tweet-harvest",
-                    "-t", token,
-                    "-s", query,
-                    "-l", "10",   # 🔥 dibatasi biar cepat
-                    "-o", file_path
-                ],
-                cwd=output_dir,
+            # cek apakah npx tersedia
+            check_npx = subprocess.run(
+                ["which", "npx"],
                 capture_output=True,
-                text=True,
-                timeout=15  # 🔥 biar tidak hang
+                text=True
             )
 
-            print("===== STDOUT =====")
-            print(result.stdout)
-
-            print("===== STDERR =====")
-            print(result.stderr)
-
-            # kalau gagal → pakai backup
-            if result.returncode != 0:
-                print("Crawling gagal, pakai backup")
+            if check_npx.returncode != 0:
+                print("NPX tidak ditemukan, pakai backup")
                 file_path = backup_path
+            else:
+                result = subprocess.run(
+                    [
+                        "npx",
+                        "tweet-harvest",
+                        "-t", token,
+                        "-s", query,
+                        "-l", "10",
+                        "-o", file_path
+                    ],
+                    cwd=output_dir,
+                    capture_output=True,
+                    text=True,
+                    timeout=15
+                )
+
+                print("===== STDOUT =====")
+                print(result.stdout)
+
+                print("===== STDERR =====")
+                print(result.stderr)
+
+                # kalau gagal → pakai backup
+                if result.returncode != 0:
+                    print("Crawling gagal, pakai backup")
+                    file_path = backup_path
 
         except Exception as e:
             print("Error crawling:", str(e))
@@ -133,7 +144,13 @@ def home(request):
         def make_wc(text, color):
             if not text.strip():
                 return None
-            wc = WordCloud(width=800, height=400, background_color="white", colormap=color).generate(text)
+            wc = WordCloud(
+                width=800,
+                height=400,
+                background_color="white",
+                colormap=color
+            ).generate(text)
+
             buffer = BytesIO()
             wc.to_image().save(buffer, format="PNG")
             return base64.b64encode(buffer.getvalue()).decode()
