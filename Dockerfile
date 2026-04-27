@@ -30,5 +30,8 @@ COPY . .
 # Buat folder untuk hasil crawling
 RUN mkdir -p tweets-data
 
+# Retrain model agar kompatibel dengan versi library di container
+RUN python3 retrain.py
+
 # Railway otomatis set PORT — gunakan shell form agar $PORT terbaca
 CMD gunicorn mysite.wsgi:application --bind 0.0.0.0:$PORT --timeout 180 --workers 2
