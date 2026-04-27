@@ -1,5 +1,4 @@
 import subprocess
-import shutil
 import os
 import json
 import pickle
@@ -29,30 +28,9 @@ fn = evaluation.get("fn", 0)
 tp = evaluation.get("tp", 0)
 
 # ==========================
-# CARI LOKASI NPX
+# NPX PATH — sudah dikonfirmasi ada di /usr/bin/npx
 # ==========================
-def find_npx():
-    """Cari lokasi npx dari berbagai kemungkinan path."""
-    # Coba shutil.which dulu dengan PATH yang lengkap
-    os.environ["PATH"] = "/usr/local/bin:/usr/bin:/bin:" + os.environ.get("PATH", "")
-    found = shutil.which("npx")
-    if found:
-        return found
-
-    # Fallback: cek path umum secara manual
-    candidates = [
-        "/usr/local/bin/npx",
-        "/usr/bin/npx",
-        "/usr/local/lib/node_modules/.bin/npx",
-        "/usr/local/lib/node_modules/npm/bin/npx-cli.js",
-    ]
-    for path in candidates:
-        if os.path.exists(path):
-            return path
-
-    return None
-
-NPX_PATH = find_npx()
+NPX_PATH = "/usr/bin/npx"
 print(f"[STARTUP] npx path: {NPX_PATH}")
 
 # ==========================
@@ -79,7 +57,6 @@ def home(request):
         os.makedirs(output_dir, exist_ok=True)
 
         file_path = os.path.join(output_dir, "hasil.csv")
-        backup_path = os.path.join(output_dir, "backup.csv")
 
         # Hapus file lama
         if os.path.exists(file_path):
@@ -88,68 +65,80 @@ def home(request):
         query = f"{keyword} lang:id"
 
         # ==========================
-        # CRAWLING + FALLBACK
+        # CRAWLING
         # ==========================
         try:
-            if NPX_PATH is None:
-                print("NPX tidak ditemukan sama sekali, pakai backup")
-                file_path = backup_path
-            else:
-                print(f"Menjalankan crawling dengan npx: {NPX_PATH}")
+            print(f"Menjalankan crawling dengan npx: {NPX_PATH}")
 
-                env = {
-                    **os.environ,
-                    "PLAYWRIGHT_BROWSERS_PATH": "/ms-playwright",
-                    "DISPLAY": "",
-                    "PATH": "/usr/local/bin:/usr/bin:/bin:" + os.environ.get("PATH", ""),
-                }
+            env = {
+                **os.environ,
+                "PLAYWRIGHT_BROWSERS_PATH": "/ms-playwright",
+                "DISPLAY": "",
+                "PATH": "/usr/local/bin:/usr/bin:/bin:" + os.environ.get("PATH", ""),
+            }
 
-                result = subprocess.run(
-                    [
-                        NPX_PATH, "--yes", "tweet-harvest@latest",
-                        "--token", token,
-                        "-s", query,
-                        "-l", "100",
-                        "-o", file_path,
-                        "--headless", "true"
-                    ],
-                    cwd=output_dir,
-                    capture_output=True,
-                    text=True,
-                    timeout=120,
-                    env=env,
-                )
+            result = subprocess.run(
+                [
+                    NPX_PATH, "--yes", "tweet-harvest@latest",
+                    "--token", token,
+                    "-s", query,
+                    "-l", "100",
+                    "-o", file_path,
+                    "--headless", "true"
+                ],
+                cwd=output_dir,
+                capture_output=True,
+                text=True,
+                timeout=120,
+                env=env,
+            )
 
-                print("===== STDOUT =====")
-                print(result.stdout)
-                print("===== STDERR =====")
-                print(result.stderr)
-                print(f"Return code: {result.returncode}")
+            print("===== STDOUT =====")
+            print(result.stdout)
+            print("===== STDERR =====")
+            print(result.stderr)
+            print(f"Return code: {result.returncode}")
 
-                if result.returncode != 0:
-                    print("Crawling gagal (returncode != 0), pakai backup")
-                    file_path = backup_path
-                elif not os.path.exists(file_path):
-                    print("File output tidak terbuat, pakai backup")
-                    file_path = backup_path
-                else:
-                    print("Crawling berhasil!")
+            if result.returncode != 0:
+                error = f"Crawling gagal. Cek token Twitter kamu."
+                print("Crawling gagal (returncode != 0)")
+                return render(request, "home.html", {
+                    "error": error,
+                    "tn": tn, "fp": fp, "fn": fn, "tp": tp,
+                    "accuracy": evaluation.get("accuracy", 0),
+                    "precision": evaluation.get("precision", 0),
+                    "recall": evaluation.get("recall", 0),
+                    "f1": evaluation.get("f1", 0),
+                })
+
+            if not os.path.exists(file_path):
+                error = "Crawling selesai tapi file hasil tidak ditemukan."
+                print("File output tidak terbuat")
+                return render(request, "home.html", {
+                    "error": error,
+                    "tn": tn, "fp": fp, "fn": fn, "tp": tp,
+                    "accuracy": evaluation.get("accuracy", 0),
+                    "precision": evaluation.get("precision", 0),
+                    "recall": evaluation.get("recall", 0),
+                    "f1": evaluation.get("f1", 0),
+                })
+
+            print("Crawling berhasil!")
 
         except subprocess.TimeoutExpired:
-            print("Crawling timeout (>120 detik), pakai backup")
-            file_path = backup_path
-        except FileNotFoundError as e:
-            print(f"FileNotFoundError: {str(e)}, pakai backup")
-            file_path = backup_path
+            error = "Crawling timeout (>120 detik). Coba kurangi limit atau coba lagi."
+            print("Crawling timeout")
+            return render(request, "home.html", {
+                "error": error,
+                "tn": tn, "fp": fp, "fn": fn, "tp": tp,
+                "accuracy": evaluation.get("accuracy", 0),
+                "precision": evaluation.get("precision", 0),
+                "recall": evaluation.get("recall", 0),
+                "f1": evaluation.get("f1", 0),
+            })
         except Exception as e:
-            print(f"Error tidak terduga: {str(e)}")
-            file_path = backup_path
-
-        # ==========================
-        # CEK FILE HASIL
-        # ==========================
-        if not os.path.exists(file_path):
-            error = "Crawling gagal dan file backup tidak ditemukan."
+            error = f"Error tidak terduga: {str(e)}"
+            print(f"Error: {str(e)}")
             return render(request, "home.html", {
                 "error": error,
                 "tn": tn, "fp": fp, "fn": fn, "tp": tp,
