@@ -27,17 +27,43 @@ fp = evaluation.get("fp", 0)
 fn = evaluation.get("fn", 0)
 tp = evaluation.get("tp", 0)
 
-# ==========================
-# NPX PATH — sudah dikonfirmasi ada di /usr/bin/npx
-# ==========================
 NPX_PATH = "/usr/bin/npx"
-print(f"[STARTUP] npx path: {NPX_PATH}")
+
+
+# ==========================
+# HELPER
+# ==========================
+def render_error(request, error_msg):
+    return render(request, "home.html", {
+        "error": error_msg,
+        "tn": tn, "fp": fp, "fn": fn, "tp": tp,
+        "accuracy": evaluation.get("accuracy", 0),
+        "precision": evaluation.get("precision", 0),
+        "recall": evaluation.get("recall", 0),
+        "f1": evaluation.get("f1", 0),
+    })
+
+
+def make_wordcloud(text, color):
+    if not text.strip():
+        return None
+
+    wc = WordCloud(
+        width=800,
+        height=400,
+        background_color="white",
+        colormap=color
+    ).generate(text)
+
+    buffer = BytesIO()
+    wc.to_image().save(buffer, format="PNG")
+    return base64.b64encode(buffer.getvalue()).decode()
+
 
 # ==========================
 # VIEW
 # ==========================
 def home(request):
-
     data = None
     error = None
     total = pos = neg = 0
@@ -50,15 +76,13 @@ def home(request):
         token = request.POST.get("auth_token")
 
         if not keyword or not token:
-            error = "Keyword dan Token wajib diisi!"
-            return render(request, "home.html", {"error": error})
+            return render_error(request, "Keyword dan Token wajib diisi!")
 
         output_dir = os.path.join(BASE_DIR, "tweets-data")
         os.makedirs(output_dir, exist_ok=True)
 
         file_path = os.path.join(output_dir, "hasil.csv")
 
-        # Hapus file lama
         if os.path.exists(file_path):
             os.remove(file_path)
 
@@ -68,8 +92,6 @@ def home(request):
         # CRAWLING
         # ==========================
         try:
-            print(f"Menjalankan crawling dengan npx: {NPX_PATH}")
-
             env = {
                 **os.environ,
                 "PLAYWRIGHT_BROWSERS_PATH": "/ms-playwright",
@@ -82,7 +104,7 @@ def home(request):
                     NPX_PATH, "--yes", "tweet-harvest@latest",
                     "--token", token,
                     "-s", query,
-                    "-l", "100",
+                    "-l", "10",
                     "-o", file_path,
                     "--headless", "true"
                 ],
@@ -93,119 +115,45 @@ def home(request):
                 env=env,
             )
 
-            print("===== STDOUT =====")
-            print(result.stdout)
-            print("===== STDERR =====")
-            print(result.stderr)
-            print(f"Return code: {result.returncode}")
-
             if result.returncode != 0:
-                error = f"Crawling gagal. Cek token Twitter kamu."
-                print("Crawling gagal (returncode != 0)")
-                return render(request, "home.html", {
-                    "error": error,
-                    "tn": tn, "fp": fp, "fn": fn, "tp": tp,
-                    "accuracy": evaluation.get("accuracy", 0),
-                    "precision": evaluation.get("precision", 0),
-                    "recall": evaluation.get("recall", 0),
-                    "f1": evaluation.get("f1", 0),
-                })
+                return render_error(
+                    request,
+                    f"Crawling gagal: {result.stderr[:300]}"
+                )
 
             if not os.path.exists(file_path):
-                error = "Crawling selesai tapi file hasil tidak ditemukan."
-                print("File output tidak terbuat")
-                return render(request, "home.html", {
-                    "error": error,
-                    "tn": tn, "fp": fp, "fn": fn, "tp": tp,
-                    "accuracy": evaluation.get("accuracy", 0),
-                    "precision": evaluation.get("precision", 0),
-                    "recall": evaluation.get("recall", 0),
-                    "f1": evaluation.get("f1", 0),
-                })
-
-            print("Crawling berhasil!")
+                return render_error(request, "File hasil crawling tidak ditemukan.")
 
         except subprocess.TimeoutExpired:
-            error = "Crawling timeout (>120 detik). Coba kurangi limit atau coba lagi."
-            print("Crawling timeout")
-            return render(request, "home.html", {
-                "error": error,
-                "tn": tn, "fp": fp, "fn": fn, "tp": tp,
-                "accuracy": evaluation.get("accuracy", 0),
-                "precision": evaluation.get("precision", 0),
-                "recall": evaluation.get("recall", 0),
-                "f1": evaluation.get("f1", 0),
-            })
+            return render_error(request, "Crawling timeout (>120 detik).")
         except Exception as e:
-            error = f"Error tidak terduga: {str(e)}"
-            print(f"Error: {str(e)}")
-            return render(request, "home.html", {
-                "error": error,
-                "tn": tn, "fp": fp, "fn": fn, "tp": tp,
-                "accuracy": evaluation.get("accuracy", 0),
-                "precision": evaluation.get("precision", 0),
-                "recall": evaluation.get("recall", 0),
-                "f1": evaluation.get("f1", 0),
-            })
+            return render_error(request, f"Error: {str(e)}")
 
         # ==========================
-        # BACA CSV
+        # LOAD CSV
         # ==========================
         try:
             df = pd.read_csv(file_path, sep=";")
         except Exception as e:
-            error = f"Gagal membaca file CSV: {str(e)}"
-            return render(request, "home.html", {
-                "error": error,
-                "tn": tn, "fp": fp, "fn": fn, "tp": tp,
-                "accuracy": evaluation.get("accuracy", 0),
-                "precision": evaluation.get("precision", 0),
-                "recall": evaluation.get("recall", 0),
-                "f1": evaluation.get("f1", 0),
-            })
+            return render_error(request, f"Gagal baca CSV: {str(e)}")
 
         if "full_text" not in df.columns:
-            error = f"Kolom 'full_text' tidak ditemukan. Kolom tersedia: {list(df.columns)}"
-            return render(request, "home.html", {
-                "error": error,
-                "tn": tn, "fp": fp, "fn": fn, "tp": tp,
-                "accuracy": evaluation.get("accuracy", 0),
-                "precision": evaluation.get("precision", 0),
-                "recall": evaluation.get("recall", 0),
-                "f1": evaluation.get("f1", 0),
-            })
+            return render_error(request, "Kolom 'full_text' tidak ditemukan.")
 
         if df.empty:
-            error = "Data kosong, tidak ada tweet yang ditemukan."
-            return render(request, "home.html", {
-                "error": error,
-                "tn": tn, "fp": fp, "fn": fn, "tp": tp,
-                "accuracy": evaluation.get("accuracy", 0),
-                "precision": evaluation.get("precision", 0),
-                "recall": evaluation.get("recall", 0),
-                "f1": evaluation.get("f1", 0),
-            })
+            return render_error(request, "Data kosong.")
 
         # ==========================
         # PREPROCESSING
         # ==========================
         df["clean"] = df["full_text"].apply(preprocessing)
-        df = df[df["clean"].str.strip() != ""]
-        df = df.dropna(subset=["clean"])
+        df = df[df["clean"].str.strip() != ""].dropna(subset=["clean"])
 
         if df.empty:
-            error = "Semua tweet kosong setelah preprocessing."
-            return render(request, "home.html", {
-                "error": error,
-                "tn": tn, "fp": fp, "fn": fn, "tp": tp,
-                "accuracy": evaluation.get("accuracy", 0),
-                "precision": evaluation.get("precision", 0),
-                "recall": evaluation.get("recall", 0),
-                "f1": evaluation.get("f1", 0),
-            })
+            return render_error(request, "Data kosong setelah preprocessing.")
 
         # ==========================
-        # PREDIKSI SENTIMEN
+        # PREDIKSI
         # ==========================
         X = vectorizer.transform(df["clean"])
         pred = model.predict(X)
@@ -220,24 +168,15 @@ def home(request):
         # ==========================
         # WORDCLOUD
         # ==========================
-        df_pos = df[df["Sentimen"] == "Positif"]
-        df_neg = df[df["Sentimen"] == "Negatif"]
+        wordcloud_pos = make_wordcloud(
+            " ".join(df[df["Sentimen"] == "Positif"]["clean"]),
+            "Greens"
+        )
 
-        def make_wc(text, color):
-            if not text.strip():
-                return None
-            wc = WordCloud(
-                width=800,
-                height=400,
-                background_color="white",
-                colormap=color
-            ).generate(text)
-            buffer = BytesIO()
-            wc.to_image().save(buffer, format="PNG")
-            return base64.b64encode(buffer.getvalue()).decode()
-
-        wordcloud_pos = make_wc(" ".join(df_pos["clean"].tolist()), "Greens")
-        wordcloud_neg = make_wc(" ".join(df_neg["clean"].tolist()), "Reds")
+        wordcloud_neg = make_wordcloud(
+            " ".join(df[df["Sentimen"] == "Negatif"]["clean"]),
+            "Reds"
+        )
 
     return render(request, "home.html", {
         "data": data,
