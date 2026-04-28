@@ -101,7 +101,7 @@ def home(request):
 
             result = subprocess.run(
                 [
-                    NPX_PATH, "--yes", "tweet-harvest@latest",
+                    NPX_PATH, "--yes", "tweet-harvest@2.0.9",
                     "--token", token,
                     "-s", query,
                     "-l", "10",
