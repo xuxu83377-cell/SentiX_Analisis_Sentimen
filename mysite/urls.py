@@ -3,6 +3,7 @@ from django.http import JsonResponse
 import os
 import subprocess
 
+
 def cek_npx(request):
     os.environ["PATH"] = "/usr/local/bin:/usr/bin:/bin:" + os.environ.get("PATH", "")
     node_ver = subprocess.run(["node", "--version"], capture_output=True, text=True)
@@ -17,7 +18,8 @@ def cek_npx(request):
         "tweet_harvest_error": th_ver.stderr.strip()[:300],
     })
 
+
 urlpatterns = [
-    path('', include('klasifikasi.urls')),
-    path('cek-npx/', cek_npx),
+    path("", include("klasifikasi.urls")),
+    path("cek-npx/", cek_npx),
 ]
