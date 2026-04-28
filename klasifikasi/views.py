@@ -116,9 +116,12 @@ def home(request):
             )
 
             if result.returncode != 0:
+                # Tampilkan bagian AKHIR error — bukan awal yang isinya warning
+                stdout_tail = result.stdout[-800:] if result.stdout else "(kosong)"
+                stderr_tail = result.stderr[-800:] if result.stderr else "(kosong)"
                 return render_error(
                     request,
-                    f"Crawling gagal: {result.stderr[:300]}"
+                    f"STDOUT: {stdout_tail} || STDERR: {stderr_tail}"
                 )
 
             if not os.path.exists(file_path):
@@ -138,7 +141,7 @@ def home(request):
             return render_error(request, f"Gagal baca CSV: {str(e)}")
 
         if "full_text" not in df.columns:
-            return render_error(request, "Kolom 'full_text' tidak ditemukan.")
+            return render_error(request, f"Kolom full_text tidak ditemukan. Kolom: {list(df.columns)}")
 
         if df.empty:
             return render_error(request, "Data kosong.")
