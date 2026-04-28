@@ -34,4 +34,4 @@ RUN mkdir -p tweets-data
 RUN python3 retrain.py
 
 # Railway otomatis set PORT — gunakan shell form agar $PORT terbaca
-CMD gunicorn mysite.wsgi:application --bind 0.0.0.0:$PORT --timeout 180 --workers 2
+CMD gunicorn mysite.wsgi:application --bind 0.0.0.0:$PORT --timeout 300 --workers 1 --threads 4 --log-level debug
