@@ -29,8 +29,8 @@ RUN apt-get update && apt-get install -y \
 # Verifikasi Node 18
 RUN node --version && npm --version
 
-# Install tweet-harvest global
-RUN npm install -g tweet-harvest@2.0.9
+# Install tweet-harvest 2.0.4 global
+RUN npm install -g tweet-harvest@2.0.4
 
 # Install Playwright Chromium
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
@@ -52,5 +52,5 @@ RUN mkdir -p tweets-data
 # Retrain model
 RUN python3 retrain.py
 
-# Jalankan Xvfb sebagai virtual display lalu gunicorn
+# Jalankan Xvfb lalu gunicorn
 CMD Xvfb :99 -screen 0 1280x1024x24 -ac & sleep 2 && gunicorn mysite.wsgi:application --bind 0.0.0.0:$PORT --timeout 300 --workers 1 --threads 4
