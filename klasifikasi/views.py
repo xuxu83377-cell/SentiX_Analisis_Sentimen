@@ -27,7 +27,6 @@ fp = evaluation.get("fp", 0)
 fn = evaluation.get("fn", 0)
 tp = evaluation.get("tp", 0)
 
-# npx ada di /usr/local/bin di image node:18
 NPX_PATH = "/usr/local/bin/npx"
 
 
@@ -94,7 +93,7 @@ def home(request):
             env = {
                 **os.environ,
                 "PLAYWRIGHT_BROWSERS_PATH": "/ms-playwright",
-                "DISPLAY": ":99",  # virtual display dari Xvfb
+                "DISPLAY": ":99",
                 "PATH": "/usr/local/bin:/usr/bin:/bin:" + os.environ.get("PATH", ""),
             }
 
@@ -122,7 +121,11 @@ def home(request):
                 )
 
             if not os.path.exists(file_path):
-                return render_error(request, "File hasil crawling tidak ditemukan.")
+                stdout_tail = result.stdout[-800:] if result.stdout else "(kosong)"
+                return render_error(
+                    request,
+                    f"File tidak terbuat. STDOUT: {stdout_tail}"
+                )
 
         except subprocess.TimeoutExpired:
             return render_error(request, "Crawling timeout (>180 detik).")
