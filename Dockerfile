@@ -1,24 +1,42 @@
-# Base image Playwright — sudah include Node.js + Chromium dependencies
-FROM mcr.microsoft.com/playwright:v1.44.0-jammy
+# Node 18 + Python + Playwright
+FROM node:18-bullseye
 
 WORKDIR /app
 
-# Install Python & pip
+# Install Python & pip & system dependencies untuk Playwright
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libdrm2 \
+    libxkbcommon0 \
+    libgbm1 \
+    libasound2 \
+    libxshmfence1 \
+    libxfixes3 \
+    libxrandr2 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxtst6 \
+    fonts-liberation \
+    libappindicator3-1 \
+    xdg-utils \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Pastikan PATH include lokasi node & npx
-ENV PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+# Verifikasi Node 18
+RUN node --version && npm --version
 
-# Install Playwright Chromium browser
+# Install tweet-harvest global
+RUN npm install -g tweet-harvest@2.0.9
+
+# Install Playwright Chromium
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN npx playwright install chromium --with-deps
 
-# Verifikasi Node.js & npx tersedia saat build
-RUN node --version && npm --version && npx --version
-RUN which npx && echo "npx path OK"
+# Verifikasi tweet-harvest tersedia
+RUN which tweet-harvest && echo "tweet-harvest OK"
 
 # Install Python dependencies
 COPY requirements.txt .
@@ -30,8 +48,7 @@ COPY . .
 # Buat folder untuk hasil crawling
 RUN mkdir -p tweets-data
 
-# Retrain model agar kompatibel dengan versi library di container
+# Retrain model
 RUN python3 retrain.py
 
-# Railway otomatis set PORT — gunakan shell form agar $PORT terbaca
-CMD gunicorn mysite.wsgi:application --bind 0.0.0.0:$PORT --timeout 300 --workers 1 --threads 4 --log-level debug
+CMD gunicorn mysite.wsgi:application --bind 0.0.0.0:$PORT --timeout 300 --workers 1 --threads 4
