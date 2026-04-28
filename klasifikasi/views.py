@@ -27,7 +27,8 @@ fp = evaluation.get("fp", 0)
 fn = evaluation.get("fn", 0)
 tp = evaluation.get("tp", 0)
 
-NPX_PATH = "/usr/local/bin/npx"
+# Pakai binary tweet-harvest langsung (sudah diinstall global di Dockerfile)
+TWEET_HARVEST_BIN = "/usr/local/bin/tweet-harvest"
 
 
 # ==========================
@@ -87,7 +88,7 @@ def home(request):
         query = f"{keyword} lang:id"
 
         # ==========================
-        # CRAWLING
+        # CRAWLING — pakai binary langsung
         # ==========================
         try:
             env = {
@@ -99,7 +100,7 @@ def home(request):
 
             result = subprocess.run(
                 [
-                    NPX_PATH, "--yes", "tweet-harvest@2.0.9",
+                    TWEET_HARVEST_BIN,
                     "--token", token,
                     "-s", query,
                     "-l", "10",
@@ -113,19 +114,13 @@ def home(request):
             )
 
             if result.returncode != 0:
-                stdout_tail = result.stdout[-800:] if result.stdout else "(kosong)"
-                stderr_tail = result.stderr[-800:] if result.stderr else "(kosong)"
-                return render_error(
-                    request,
-                    f"STDOUT: {stdout_tail} || STDERR: {stderr_tail}"
-                )
+                stdout_tail = result.stdout[-500:] if result.stdout else "(kosong)"
+                stderr_tail = result.stderr[-500:] if result.stderr else "(kosong)"
+                return render_error(request, f"STDOUT: {stdout_tail} || STDERR: {stderr_tail}")
 
             if not os.path.exists(file_path):
-                stdout_tail = result.stdout[-800:] if result.stdout else "(kosong)"
-                return render_error(
-                    request,
-                    f"File tidak terbuat. STDOUT: {stdout_tail}"
-                )
+                stdout_tail = result.stdout[-500:] if result.stdout else "(kosong)"
+                return render_error(request, f"File tidak terbuat. STDOUT: {stdout_tail}")
 
         except subprocess.TimeoutExpired:
             return render_error(request, "Crawling timeout (>180 detik).")
