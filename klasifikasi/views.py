@@ -27,6 +27,7 @@ fp = evaluation.get("fp", 0)
 fn = evaluation.get("fn", 0)
 tp = evaluation.get("tp", 0)
 
+# npx ada di /usr/local/bin di image node:18
 NPX_PATH = "/usr/local/bin/npx"
 
 
@@ -47,14 +48,12 @@ def render_error(request, error_msg):
 def make_wordcloud(text, color):
     if not text.strip():
         return None
-
     wc = WordCloud(
         width=800,
         height=400,
         background_color="white",
         colormap=color
     ).generate(text)
-
     buffer = BytesIO()
     wc.to_image().save(buffer, format="PNG")
     return base64.b64encode(buffer.getvalue()).decode()
@@ -95,7 +94,7 @@ def home(request):
             env = {
                 **os.environ,
                 "PLAYWRIGHT_BROWSERS_PATH": "/ms-playwright",
-                "DISPLAY": "",
+                "DISPLAY": ":99",  # virtual display dari Xvfb
                 "PATH": "/usr/local/bin:/usr/bin:/bin:" + os.environ.get("PATH", ""),
             }
 
@@ -106,17 +105,15 @@ def home(request):
                     "-s", query,
                     "-l", "10",
                     "-o", file_path,
-                    "--headless", "true"
                 ],
                 cwd=output_dir,
                 capture_output=True,
                 text=True,
-                timeout=120,
+                timeout=180,
                 env=env,
             )
 
             if result.returncode != 0:
-                # Tampilkan bagian AKHIR error — bukan awal yang isinya warning
                 stdout_tail = result.stdout[-800:] if result.stdout else "(kosong)"
                 stderr_tail = result.stderr[-800:] if result.stderr else "(kosong)"
                 return render_error(
@@ -128,7 +125,7 @@ def home(request):
                 return render_error(request, "File hasil crawling tidak ditemukan.")
 
         except subprocess.TimeoutExpired:
-            return render_error(request, "Crawling timeout (>120 detik).")
+            return render_error(request, "Crawling timeout (>180 detik).")
         except Exception as e:
             return render_error(request, f"Error: {str(e)}")
 
@@ -175,7 +172,6 @@ def home(request):
             " ".join(df[df["Sentimen"] == "Positif"]["clean"]),
             "Greens"
         )
-
         wordcloud_neg = make_wordcloud(
             " ".join(df[df["Sentimen"] == "Negatif"]["clean"]),
             "Reds"
