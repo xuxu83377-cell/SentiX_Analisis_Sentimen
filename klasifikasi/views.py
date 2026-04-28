@@ -27,7 +27,7 @@ fp = evaluation.get("fp", 0)
 fn = evaluation.get("fn", 0)
 tp = evaluation.get("tp", 0)
 
-NPX_PATH = "/usr/bin/npx"
+NPX_PATH = "/usr/local/bin/npx"
 
 
 # ==========================
