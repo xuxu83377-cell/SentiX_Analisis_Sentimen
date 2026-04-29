@@ -31,7 +31,6 @@ tp = evaluation.get("tp", 0)
 # CARI PATH TWEET-HARVEST
 # ==========================
 def get_tweet_harvest_path():
-    # Coba baca dari file yang disimpan saat build
     if os.path.exists('/tweet-harvest-path.txt'):
         with open('/tweet-harvest-path.txt') as f:
             path = f.read().strip()
@@ -39,7 +38,6 @@ def get_tweet_harvest_path():
                 print(f"[STARTUP] tweet-harvest dari file: {path}")
                 return path
 
-    # Coba lokasi umum
     candidates = [
         "/usr/local/bin/tweet-harvest",
         "/usr/bin/tweet-harvest",
@@ -51,12 +49,8 @@ def get_tweet_harvest_path():
             print(f"[STARTUP] tweet-harvest ditemukan: {path}")
             return path
 
-    # Coba via which
     try:
-        result = subprocess.run(
-            ["which", "tweet-harvest"],
-            capture_output=True, text=True
-        )
+        result = subprocess.run(["which", "tweet-harvest"], capture_output=True, text=True)
         if result.returncode == 0:
             path = result.stdout.strip()
             print(f"[STARTUP] tweet-harvest via which: {path}")
@@ -119,10 +113,13 @@ def home(request):
         if TWEET_HARVEST_BIN is None:
             return render_error(request, "tweet-harvest tidak ditemukan di server.")
 
-        output_dir = os.path.join(BASE_DIR, "tweets-data")
+        # FIX: output_dir langsung /app/tweets-data
+        # file_path langsung nama file tanpa subfolder
+        output_dir = "/app/tweets-data"
         os.makedirs(output_dir, exist_ok=True)
 
-        file_path = os.path.join(output_dir, "hasil.csv")
+        file_name = "hasil.csv"
+        file_path = os.path.join(output_dir, file_name)
 
         if os.path.exists(file_path):
             os.remove(file_path)
@@ -148,7 +145,7 @@ def home(request):
                     "-l", "100",
                     "-o", file_path,
                 ],
-                cwd=output_dir,
+                cwd=output_dir,  # jalankan dari output_dir
                 capture_output=True,
                 text=True,
                 timeout=180,
