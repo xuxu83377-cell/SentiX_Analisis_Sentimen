@@ -27,7 +27,7 @@ fp = evaluation.get("fp", 0)
 fn = evaluation.get("fn", 0)
 tp = evaluation.get("tp", 0)
 
-# Pakai binary tweet-harvest langsung (sudah diinstall global di Dockerfile)
+# Pakai binary tweet-harvest 2.6.1 yang sudah diinstall global
 TWEET_HARVEST_BIN = "/usr/local/bin/tweet-harvest"
 
 
@@ -88,7 +88,7 @@ def home(request):
         query = f"{keyword} lang:id"
 
         # ==========================
-        # CRAWLING — pakai binary langsung
+        # CRAWLING
         # ==========================
         try:
             env = {
@@ -103,7 +103,7 @@ def home(request):
                     TWEET_HARVEST_BIN,
                     "--token", token,
                     "-s", query,
-                    "-l", "10",
+                    "-l", "100",
                     "-o", file_path,
                 ],
                 cwd=output_dir,
