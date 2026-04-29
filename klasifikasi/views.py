@@ -27,7 +27,47 @@ fp = evaluation.get("fp", 0)
 fn = evaluation.get("fn", 0)
 tp = evaluation.get("tp", 0)
 
-TWEET_HARVEST_BIN = "/usr/local/bin/tweet-harvest"
+# ==========================
+# CARI PATH TWEET-HARVEST
+# ==========================
+def get_tweet_harvest_path():
+    # Coba baca dari file yang disimpan saat build
+    if os.path.exists('/tweet-harvest-path.txt'):
+        with open('/tweet-harvest-path.txt') as f:
+            path = f.read().strip()
+            if path and os.path.exists(path):
+                print(f"[STARTUP] tweet-harvest dari file: {path}")
+                return path
+
+    # Coba lokasi umum
+    candidates = [
+        "/usr/local/bin/tweet-harvest",
+        "/usr/bin/tweet-harvest",
+        "/usr/local/lib/node_modules/.bin/tweet-harvest",
+        "/usr/lib/node_modules/.bin/tweet-harvest",
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            print(f"[STARTUP] tweet-harvest ditemukan: {path}")
+            return path
+
+    # Coba via which
+    try:
+        result = subprocess.run(
+            ["which", "tweet-harvest"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            path = result.stdout.strip()
+            print(f"[STARTUP] tweet-harvest via which: {path}")
+            return path
+    except:
+        pass
+
+    print("[STARTUP] tweet-harvest TIDAK DITEMUKAN!")
+    return None
+
+TWEET_HARVEST_BIN = get_tweet_harvest_path()
 
 
 # ==========================
@@ -75,6 +115,9 @@ def home(request):
 
         if not keyword or not token:
             return render_error(request, "Keyword dan Token wajib diisi!")
+
+        if TWEET_HARVEST_BIN is None:
+            return render_error(request, "tweet-harvest tidak ditemukan di server.")
 
         output_dir = os.path.join(BASE_DIR, "tweets-data")
         os.makedirs(output_dir, exist_ok=True)

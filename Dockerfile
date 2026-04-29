@@ -1,4 +1,4 @@
-# Gunakan image yang support Python 3.11 + Node 18
+# Python 3.11 base
 FROM python:3.11-bullseye
 
 WORKDIR /app
@@ -38,9 +38,10 @@ RUN npm install -g tweet-harvest@2.6.1
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN npx playwright install chromium --with-deps
 
-# Verifikasi
-RUN which tweet-harvest && echo "tweet-harvest OK"
-RUN which npx && echo "npx OK"
+# Cari dan simpan lokasi tweet-harvest ke file
+RUN which tweet-harvest > /tweet-harvest-path.txt && \
+    cat /tweet-harvest-path.txt && \
+    echo "tweet-harvest path saved!"
 
 # Install Python dependencies
 COPY requirements.txt .
@@ -52,7 +53,7 @@ COPY . .
 # Buat folder crawling
 RUN mkdir -p tweets-data
 
-# Retrain model dengan Python 3.11 + numpy terbaru
+# Retrain model
 RUN python train_model.py
 
 # Jalankan Xvfb + gunicorn
