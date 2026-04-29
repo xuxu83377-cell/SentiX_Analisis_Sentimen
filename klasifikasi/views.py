@@ -145,7 +145,7 @@ def home(request):
                     "-l", "100",
                     "-o", file_path,
                 ],
-                cwd=output_dir,  # jalankan dari output_dir
+                cwd="/app",  # jalankan dari output_dir
                 capture_output=True,
                 text=True,
                 timeout=180,
