@@ -27,7 +27,6 @@ fp = evaluation.get("fp", 0)
 fn = evaluation.get("fn", 0)
 tp = evaluation.get("tp", 0)
 
-# Pakai binary tweet-harvest 2.6.1 yang sudah diinstall global
 TWEET_HARVEST_BIN = "/usr/local/bin/tweet-harvest"
 
 
