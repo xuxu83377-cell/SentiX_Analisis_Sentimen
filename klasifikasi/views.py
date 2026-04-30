@@ -148,7 +148,7 @@ def home(request):
                         TWEET_HARVEST_BIN,
                         "--token", token,
                         "-s", query,
-                        "-l", "100",
+                        "-l", "30",
                         "-o", file_path,
                     ],
                     cwd="/app",
@@ -183,7 +183,7 @@ def home(request):
         # LOAD CSV
         # ==========================
         try:
-            df = pd.read_csv(file_path, sep=";")
+            df = pd.read_csv(file_path, sep=",")
         except Exception as e:
             try:
                 df = pd.read_csv(file_path, sep=",")
