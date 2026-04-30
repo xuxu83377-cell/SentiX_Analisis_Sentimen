@@ -35,30 +35,24 @@ def get_tweet_harvest_path():
         with open('/tweet-harvest-path.txt') as f:
             path = f.read().strip()
             if path and os.path.exists(path):
-                print(f"[STARTUP] tweet-harvest dari file: {path}")
                 return path
 
     candidates = [
         "/usr/local/bin/tweet-harvest",
         "/usr/bin/tweet-harvest",
         "/usr/local/lib/node_modules/.bin/tweet-harvest",
-        "/usr/lib/node_modules/.bin/tweet-harvest",
     ]
     for path in candidates:
         if os.path.exists(path):
-            print(f"[STARTUP] tweet-harvest ditemukan: {path}")
             return path
 
     try:
         result = subprocess.run(["which", "tweet-harvest"], capture_output=True, text=True)
         if result.returncode == 0:
-            path = result.stdout.strip()
-            print(f"[STARTUP] tweet-harvest via which: {path}")
-            return path
+            return result.stdout.strip()
     except:
         pass
 
-    print("[STARTUP] tweet-harvest TIDAK DITEMUKAN!")
     return None
 
 TWEET_HARVEST_BIN = get_tweet_harvest_path()
@@ -92,6 +86,21 @@ def make_wordcloud(text, color):
     return base64.b64encode(buffer.getvalue()).decode()
 
 
+def cari_csv_keyword(keyword, output_dir):
+    """Cari file CSV yang namanya mengandung keyword."""
+    keyword_lower = keyword.lower().replace(" ", "_")
+    if not os.path.exists(output_dir):
+        return None
+    for f in os.listdir(output_dir):
+        if f.endswith(".csv") and keyword_lower in f.lower():
+            return os.path.join(output_dir, f)
+    # Cari juga file hasil.csv sebagai fallback
+    hasil = os.path.join(output_dir, "hasil.csv")
+    if os.path.exists(hasil):
+        return hasil
+    return None
+
+
 # ==========================
 # VIEW
 # ==========================
@@ -105,66 +114,70 @@ def home(request):
     if request.method == "POST":
 
         keyword = request.POST.get("keyword")
-        token = request.POST.get("auth_token")
+        token = request.POST.get("auth_token", "")
 
-        if not keyword or not token:
-            return render_error(request, "Keyword dan Token wajib diisi!")
+        if not keyword:
+            return render_error(request, "Keyword wajib diisi!")
 
-        if TWEET_HARVEST_BIN is None:
-            return render_error(request, "tweet-harvest tidak ditemukan di server.")
-
-        # FIX: output_dir langsung /app/tweets-data
-        # file_path langsung nama file tanpa subfolder
         output_dir = "/app/tweets-data"
         os.makedirs(output_dir, exist_ok=True)
 
-        file_name = "hasil.csv"
-        file_path = os.path.join(output_dir, file_name)
-
-        if os.path.exists(file_path):
-            os.remove(file_path)
-
-        query = f"{keyword} lang:id"
+        file_path = os.path.join(output_dir, "hasil.csv")
+        keyword_safe = keyword.lower().replace(" ", "_")
 
         # ==========================
-        # CRAWLING
+        # COBA CRAWLING DULU
         # ==========================
-        try:
-            env = {
-                **os.environ,
-                "PLAYWRIGHT_BROWSERS_PATH": "/ms-playwright",
-                "DISPLAY": ":99",
-                "PATH": "/usr/local/bin:/usr/bin:/bin:" + os.environ.get("PATH", ""),
-            }
+        crawling_berhasil = False
 
-            result = subprocess.run(
-                [
-                    TWEET_HARVEST_BIN,
-                    "--token", token,
-                    "-s", query,
-                    "-l", "100",
-                    "-o", file_path,
-                ],
-                cwd="/app",  # jalankan dari output_dir
-                capture_output=True,
-                text=True,
-                timeout=180,
-                env=env,
-            )
+        if token and TWEET_HARVEST_BIN:
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
 
-            if result.returncode != 0:
-                stdout_tail = result.stdout[-500:] if result.stdout else "(kosong)"
-                stderr_tail = result.stderr[-500:] if result.stderr else "(kosong)"
-                return render_error(request, f"STDOUT: {stdout_tail} || STDERR: {stderr_tail}")
+                query = f"{keyword} lang:id"
+                env = {
+                    **os.environ,
+                    "PLAYWRIGHT_BROWSERS_PATH": "/ms-playwright",
+                    "DISPLAY": ":99",
+                    "PATH": "/usr/local/bin:/usr/bin:/bin:" + os.environ.get("PATH", ""),
+                }
 
-            if not os.path.exists(file_path):
-                stdout_tail = result.stdout[-500:] if result.stdout else "(kosong)"
-                return render_error(request, f"File tidak terbuat. STDOUT: {stdout_tail}")
+                result = subprocess.run(
+                    [
+                        TWEET_HARVEST_BIN,
+                        "--token", token,
+                        "-s", query,
+                        "-l", "100",
+                        "-o", file_path,
+                    ],
+                    cwd="/app",
+                    capture_output=True,
+                    text=True,
+                    timeout=180,
+                    env=env,
+                )
 
-        except subprocess.TimeoutExpired:
-            return render_error(request, "Crawling timeout (>180 detik).")
-        except Exception as e:
-            return render_error(request, f"Error: {str(e)}")
+                if result.returncode == 0 and os.path.exists(file_path):
+                    crawling_berhasil = True
+                    print(f"Crawling berhasil: {file_path}")
+
+            except Exception as e:
+                print(f"Crawling gagal: {str(e)}")
+
+        # ==========================
+        # FALLBACK: CARI CSV LOKAL
+        # ==========================
+        if not crawling_berhasil:
+            print("Crawling gagal/skip, cari CSV lokal...")
+            file_path = cari_csv_keyword(keyword, output_dir)
+
+            if file_path is None:
+                return render_error(
+                    request,
+                    f"Data untuk keyword '{keyword}' tidak ditemukan. "
+                    f"Silakan masukkan auth token Twitter yang valid."
+                )
 
         # ==========================
         # LOAD CSV
@@ -172,7 +185,10 @@ def home(request):
         try:
             df = pd.read_csv(file_path, sep=";")
         except Exception as e:
-            return render_error(request, f"Gagal baca CSV: {str(e)}")
+            try:
+                df = pd.read_csv(file_path, sep=",")
+            except Exception as e2:
+                return render_error(request, f"Gagal baca CSV: {str(e2)}")
 
         if "full_text" not in df.columns:
             return render_error(request, f"Kolom full_text tidak ditemukan. Kolom: {list(df.columns)}")
